@@ -4,23 +4,28 @@ Unused terminals:
 
     AND
     ASSIGN
-    AT
+    BOOL
     CASE
+    CHAR
     CIN
     COMMA
     COMMENT
     COUT
     DECREMENT
     DO
+    EEQ
     ELSE
     END
     EQ
+    ERROR
+    FALSE
     FLOAT
     GE
     GT
     IF
     INCREMENT
     INT
+    INVALID_COMMENT
     INVALID_ID
     INVALID_REAL
     LBRACE
@@ -35,7 +40,11 @@ Unused terminals:
     RBRACE
     REAL
     SEMICOLON
+    STRING
     SWITCH
+    THEN
+    TRUE
+    UNTIL
     WHILE
 
 Grammar
@@ -55,8 +64,9 @@ Terminals, with rules where they appear
 
 AND                  : 
 ASSIGN               : 
-AT                   : 
+BOOL                 : 
 CASE                 : 
+CHAR                 : 
 CIN                  : 
 COMMA                : 
 COMMENT              : 
@@ -64,9 +74,12 @@ COUT                 :
 DECREMENT            : 
 DIVIDE               : 5
 DO                   : 
+EEQ                  : 
 ELSE                 : 
 END                  : 
 EQ                   : 
+ERROR                : 
+FALSE                : 
 FLOAT                : 
 GE                   : 
 GT                   : 
@@ -74,6 +87,7 @@ ID                   : 9
 IF                   : 
 INCREMENT            : 
 INT                  : 
+INVALID_COMMENT      : 
 INVALID_ID           : 
 INVALID_REAL         : 
 LBRACE               : 
@@ -93,8 +107,12 @@ RBRACE               :
 REAL                 : 
 RPAREN               : 8
 SEMICOLON            : 
+STRING               : 
 SWITCH               : 
+THEN                 : 
 TIMES                : 4
+TRUE                 : 
+UNTIL                : 
 WHILE                : 
 error                : 
 

@@ -1,35 +1,35 @@
 import ply.lex as lex
 
-# Palabras reservadas
 reserved = {
-    'if': 'IF', 'else': 'ELSE', 'end': 'END', 'do': 'DO', 'while': 'WHILE', 'switch': 'SWITCH',
-    'case': 'CASE', 'int': 'INT', 'float': 'FLOAT', 'main': 'MAIN', 'cin': 'CIN', 'cout': 'COUT'
+    'if': 'IF', 'else': 'ELSE', 'end': 'END', 'do': 'DO', 'while': 'WHILE', 
+    'switch': 'SWITCH', 'case': 'CASE', 'int': 'INT', 'float': 'FLOAT', 
+    'main': 'MAIN', 'cin': 'CIN', 'cout': 'COUT', 'then': 'THEN', 'until': 'UNTIL'
 }
 
-# Lista de tokens
 tokens = [
-    'NUMBER', 'REAL', 'ID', 'COMMENT', 'INVALID_REAL', 'INVALID_ID', 'AT',
-    'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MODULO', 'POWER', 'INCREMENT', 'DECREMENT',
-    'LT', 'LE', 'GT', 'GE', 'NE', 'EQ',
+    'NUMBER', 'REAL', 'ID', 'COMMENT', 'INVALID_ID', 'INVALID_REAL', 'INVALID_COMMENT',
+    'ERROR', 'STRING', 'CHAR', 'BOOL', 'TRUE', 'FALSE',
+    'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MODULO', 'POWER', 
+    'LT', 'LE', 'GT', 'GE', 'NE', 'EQ', 'EEQ',
     'AND', 'OR', 'NOT',
-    'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'COMMA', 'SEMICOLON', 'ASSIGN'
+    'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'COMMA', 'SEMICOLON', 'ASSIGN',
+    'INCREMENT', 'DECREMENT'
 ] + list(reserved.values())
 
-# Expresiones regulares para tokens simples
+# Tokens válidos
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_TIMES = r'\*'
 t_DIVIDE = r'/'
 t_MODULO = r'%'
 t_POWER = r'\^'
-t_INCREMENT = r'\+\+'
-t_DECREMENT = r'--'
 t_LT = r'<'
 t_LE = r'<='
 t_GT = r'>'
 t_GE = r'>='
 t_NE = r'!='
-t_EQ = r'=='
+t_EQ = r'='
+t_EEQ = r'=='
 t_AND = r'&&'
 t_OR = r'\|\|'
 t_NOT = r'!'
@@ -40,69 +40,63 @@ t_RBRACE = r'\}'
 t_COMMA = r','
 t_SEMICOLON = r';'
 t_ASSIGN = r'='
-t_AT = r'@'
+t_INCREMENT = r'\+\+'
+t_DECREMENT = r'--'
+
+def t_ERROR_MIXED_REAL(t):
+    r'\d+\.[a-zA-Z_]+'
+    t.type = 'ERROR'
+    return t
 
 def t_REAL(t):
-    r'[-+]?[0-9]+\.[0-9]+'
-    if ".." in t.value:
-        t.type = 'INVALID_REAL'
+    r'\d+\.\d+(\.\d+)*'
+    if t.value.count('.') > 1:
+        t.type = 'ERROR'
+        t.value = t.value
     else:
         t.value = float(t.value)
     return t
 
 def t_NUMBER(t):
-    r'[-+]?[0-9]+(?![\.0-9])'
+    r'\d+'
     t.value = int(t.value)
     return t
 
-def t_INVALID_REAL(t):
-    r'[-+]?[0-9]+\.[a-zA-Z_]+'
-    t.type = 'INVALID_REAL'
+def t_ID(t):
+    r'[a-zA-Z_][a-zA-Z0-9_@]*'
+    if t.value in reserved:
+        t.type = reserved[t.value]
+    elif '@' in t.value:
+        t.type = 'ERROR'
     return t
 
-def t_ID(t):
-    r'[a-zA-Z_][a-zA-Z_0-9@]*'
-    if '@' in t.value:
-        t.type = 'INVALID_ID'
-    elif t.value in reserved:
-        t.type = reserved[t.value]
-    else:
-        t.type = 'ID'
-    return t
+
 
 def t_COMMENT(t):
     r'//.*|/\*[\s\S]*?\*/'
-    pass  # Ignorar comentarios
+    pass
 
 t_ignore = ' \t'
 
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
-    pass
 
 def t_error(t):
-    print(f"Carácter ilegal '{t.value[0]}' en línea {t.lineno}")
+    # Solo caracteres realmente inválidos
+    invalid_chars = {'@', '$', '¿', '?', '¡', '°', '¬', '~'}
+    if t.value[0] in invalid_chars:
+        error_token = lex.LexToken()
+        error_token.type = 'ERROR'
+        error_token.value = t.value[0]
+        error_token.lineno = t.lineno
+        error_token.lexpos = t.lexpos
+        t.lexer.skip(1)
+        return error_token
     t.lexer.skip(1)
 
 lexer = lex.lex()
 
 def test_lexer(input_text):
     lexer.input(input_text)
-    return [tok for tok in lexer]
-
-if __name__ == "__main__":
-    code = """
-    int x = 5;
-    float y = 3.14;
-    if (x > y) {
-        cout << "Mayor";
-    }
-    34.34.34.34
-    sum@r
-    int myVar = 10;
-    32.algo
-    """
-    tokens = test_lexer(code)
-    for tok in tokens:
-        print(tok)
+    return list(lexer)

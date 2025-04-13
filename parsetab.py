@@ -6,7 +6,7 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'AND ASSIGN AT CASE CIN COMMA COMMENT COUT DECREMENT DIVIDE DO ELSE END EQ FLOAT GE GT ID IF INCREMENT INT INVALID_ID INVALID_REAL LBRACE LE LPAREN LT MAIN MINUS MODULO NE NOT NUMBER OR PLUS POWER RBRACE REAL RPAREN SEMICOLON SWITCH TIMES WHILEexpression : expression PLUS termexpression : expression MINUS termexpression : termterm : term TIMES factorterm : term DIVIDE factorterm : factorfactor : NUMBERfactor : LPAREN expression RPARENfactor : ID'
+_lr_signature = 'AND ASSIGN BOOL CASE CHAR CIN COMMA COMMENT COUT DECREMENT DIVIDE DO EEQ ELSE END EQ ERROR FALSE FLOAT GE GT ID IF INCREMENT INT INVALID_COMMENT INVALID_ID INVALID_REAL LBRACE LE LPAREN LT MAIN MINUS MODULO NE NOT NUMBER OR PLUS POWER RBRACE REAL RPAREN SEMICOLON STRING SWITCH THEN TIMES TRUE UNTIL WHILEexpression : expression PLUS termexpression : expression MINUS termexpression : termterm : term TIMES factorterm : term DIVIDE factorterm : factorfactor : NUMBERfactor : LPAREN expression RPARENfactor : ID'
     
 _lr_action_items = {'NUMBER':([0,5,7,8,9,10,],[4,4,4,4,4,4,]),'LPAREN':([0,5,7,8,9,10,],[5,5,5,5,5,5,]),'ID':([0,5,7,8,9,10,],[6,6,6,6,6,6,]),'$end':([1,2,3,4,6,12,13,14,15,16,],[0,-3,-6,-7,-9,-1,-2,-4,-5,-8,]),'PLUS':([1,2,3,4,6,11,12,13,14,15,16,],[7,-3,-6,-7,-9,7,-1,-2,-4,-5,-8,]),'MINUS':([1,2,3,4,6,11,12,13,14,15,16,],[8,-3,-6,-7,-9,8,-1,-2,-4,-5,-8,]),'RPAREN':([2,3,4,6,11,12,13,14,15,16,],[-3,-6,-7,-9,16,-1,-2,-4,-5,-8,]),'TIMES':([2,3,4,6,12,13,14,15,16,],[9,-6,-7,-9,9,9,-4,-5,-8,]),'DIVIDE':([2,3,4,6,12,13,14,15,16,],[10,-6,-7,-9,10,10,-4,-5,-8,]),}
 

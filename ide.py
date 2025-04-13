@@ -42,114 +42,103 @@ class TextLineNumbers(tk.Canvas):
 
 class CustomText(tk.Text):
     def __init__(self, *args, **kwargs):
-        kwargs["undo"] = True  # Asegurar que undo=True está en los argumentos
-        super().__init__(*args, **kwargs)  # Llamar a la clase base correctamente
         tk.Text.__init__(self, *args, **kwargs)
         self._orig = self._w + "_orig"
         self.tk.call("rename", self._w, self._orig)
         self.tk.createcommand(self._w, self._proxy)
-        self.config(undo=True)
-        self.edit_reset()
-
+        
+        # Configuración del editor
+        self.config(
+            undo=True,
+            wrap=tk.NONE,
+            width=80,
+            height=20,
+            bg="white",
+            fg="black",
+            insertbackground="black",
+            font=("Consolas", 10)
+        )
+        
         # Configurar colores para cada tipo de token
-        self.tag_config("NUMBER", foreground="blue")  # Color 1 - Números enteros
-        self.tag_config("REAL", foreground="blue")    # Color 1 - Números reales
-        self.tag_config("ID", foreground="black")     # Color 2 - Identificadores
-        self.tag_config("COMMENT", foreground="green")  # Color 3 - Comentarios
-        self.tag_config("RESERVED", foreground="purple")  # Color 4 - Palabras reservadas
-        self.tag_config("OPERATOR", foreground="red")   # Color 5 - Operadores aritméticos
-        self.tag_config("RELATIONAL", foreground="orange")  # Color 6 - Operadores relacionales
-        self.tag_config("LOGICAL", foreground="orange")  # Color 6 - Operadores lógicos
-        self.tag_config("SYMBOL", foreground="brown")  # Símbolos
-        self.tag_config("ASSIGN", foreground="darkgreen")  # Asignación
-        self.tag_config("ERROR", foreground="magenta", underline=True)  # Errores
+        self.tag_config("NUMBER", foreground="blue")
+        self.tag_config("REAL", foreground="blue") 
+        self.tag_config("ID", foreground="black") 
+        self.tag_config("COMMENT", foreground="green")
+        self.tag_config("RESERVED", foreground="purple")
+        self.tag_config("OPERATOR", foreground="red")
+        self.tag_config("RELATIONAL", foreground="orange")
+        self.tag_config("LOGICAL", foreground="orange")
+        self.tag_config("SYMBOL", foreground="brown")
+        self.tag_config("ASSIGN", foreground="darkgreen")
+        self.tag_config("ERROR", foreground="red", underline=True)
 
-        # Configurar delay para el resaltado después de escribir
-        self.after_id = None
+        # Configurar eventos
         self.bind("<<Modified>>", self._on_modified)
+        self.after_id = None
 
     def _proxy(self, *args):
         cmd = (self._orig,) + args
         result = self.tk.call(cmd)
         
         if args[0] in ("insert", "replace", "delete"):
-            self.after(1, self.highlight_syntax)  
+            self.event_generate("<<TextModified>>")
         return result
         
     def _on_modified(self, event=None):
-        """Maneja el evento Modified y programa el resaltado con retraso"""
-        print("Evento <<Modified>> detectado")  # Depuración
         if self.after_id:
             self.after_cancel(self.after_id)
-        
-        # Limpiar el indicador de modificación
         self.tk.call(self._orig, "edit", "modified", 0)
-        
-        # Programar el resaltado con un pequeño retraso para mejorar el rendimiento
-        self.after_id = self.after(10, self.highlight_syntax)
+        self.after_id = self.after(300, self.highlight_syntax)
 
     def highlight_syntax(self):
-        print("Ejecutando highlight_syntax")  # Depuración
-
-        # Eliminar resaltado previo sin perder colores existentes
-        for tag in ["NUMBER", "REAL", "ID", "COMMENT", "RESERVED", "OPERATOR",
-                    "RELATIONAL", "LOGICAL", "SYMBOL", "ASSIGN", "ERROR"]:
+        """Resalta la sintaxis del texto en el editor"""
+        # Limpiar todos los tags existentes
+        for tag in self.tag_names():
             self.tag_remove(tag, "1.0", tk.END)
-
-        input_text = self.get("1.0", tk.END).strip()
-        if not input_text:
-            return  
-
+        
+        # Obtener el texto completo
+        text = self.get("1.0", tk.END)
+        
         try:
-            tokens = test_lexer(input_text)
-        except Exception as e:
-            print(f"Error en test_lexer: {e}")  # Depuración
-            return
-
-        for tok in tokens:
-            try:
-                if not hasattr(tok, 'lineno') or not hasattr(tok, 'lexpos'):
-                    continue
+            # Usar un lexer similar a C++ (ajustar según necesidades)
+            lexer = get_lexer_by_name("cpp", stripall=True)
+            
+            # Aplicar el lexer al texto
+            for token_type, value in lex(text, lexer):
+                # Mapear los tokens de Pygments a nuestros tags
+                if token_type in Token.Comment:
+                    tag = "COMMENT"
+                elif value == 'main':  # <-- CAMBIO ESPECÍFICO PARA 'main'
+                    tag = "RESERVED"
+                elif token_type in Token.Keyword:
+                    tag = "RESERVED"
+                elif token_type in Token.Name:
+                    tag = "ID"
+                elif token_type in Token.Literal.Number.Integer:
+                    tag = "NUMBER"
+                elif token_type in Token.Literal.Number.Float:
+                    tag = "REAL"
+                elif token_type in Token.Operator:
+                    tag = "OPERATOR"
+                elif token_type in Token.Operator.Word:
+                    tag = "LOGICAL"
+                elif token_type in Token.Punctuation:
+                    tag = "SYMBOL"
+                else:
+                    continue  # Ignorar otros tokens
                 
-                line = int(tok.lineno)
-                lexpos = int(tok.lexpos)
-
-                # Obtener la línea de texto para calcular posiciones correctamente
-                line_start_index = f"{line}.0"
-                line_text = self.get(line_start_index, f"{line}.end")
-
-                token_start = line_text.find(str(tok.value))
-                if token_start == -1:
-                    continue  # No se encontró el token en la línea
-
-                start_pos = f"{line}.{token_start}"
-                end_pos = f"{line}.{token_start + len(str(tok.value))}"
-
-                # Aplicar los colores según el tipo de token
-                tag_map = {
-                    "NUMBER": "NUMBER",
-                    "REAL": "REAL",
-                    "ID": "ID",
-                    "COMMENT": "COMMENT",
-                    "ASSIGN": "ASSIGN",
-                    "ERROR": "ERROR",
-                }
-                if tok.type in reserved.values():
-                    tag_map[tok.type] = "RESERVED"
-                elif tok.type in ("PLUS", "MINUS", "TIMES", "DIVIDE", "MODULO"):
-                    tag_map[tok.type] = "OPERATOR"
-                elif tok.type in ("LT", "LE", "GT", "GE", "NE", "EQ"):
-                    tag_map[tok.type] = "RELATIONAL"
-                elif tok.type in ("AND", "OR", "NOT"):
-                    tag_map[tok.type] = "LOGICAL"
-                elif tok.type in ("LPAREN", "RPAREN", "LBRACE", "RBRACE", "COMMA", "SEMICOLON"):
-                    tag_map[tok.type] = "SYMBOL"
-
-                if tok.type in tag_map:
-                    self.tag_add(tag_map[tok.type], start_pos, end_pos)
-            except Exception as e:
-                print(f"Error resaltando token {tok}: {e}")  # Depuración
-
+                # Buscar y aplicar tags a todas las ocurrencias
+                start = "1.0"
+                while True:
+                    start = self.search(value, start, stopindex=tk.END)
+                    if not start:
+                        break
+                    end = f"{start}+{len(value)}c"
+                    self.tag_add(tag, start, end)
+                    start = end
+        
+        except ClassNotFound:
+            pass
 
 class IDE:
     def __init__(self, root):
@@ -191,37 +180,60 @@ class IDE:
         toolbar = tk.Frame(self.root, bd=1, relief=tk.RAISED)
         toolbar.pack(side=tk.TOP, fill=tk.X)
 
-        # Íconos para las operaciones del menú
-        self.new_icon = PhotoImage(file="icons/new_icon.png").subsample(3,3)
-        self.open_icon = PhotoImage(file="icons/open_icon.png").subsample(3,3)
-        self.save_icon = PhotoImage(file="icons/save_icon.png").subsample(3,3)
-        self.save_as_icon = PhotoImage(file="icons/save_as_icon.png").subsample(3,3)
-        self.close_icon = PhotoImage(file="icons/close_icon.png").subsample(3,3)
-        self.exit_icon = PhotoImage(file="icons/exit_icon.png").subsample(3,3)
-        self.undo_icon = PhotoImage(file="icons/undo_icon.png").subsample(2,2)
-        self.redo_icon = PhotoImage(file="icons/redo_icon.png").subsample(2,2)
+        # Íconos para las operaciones del menú (usando placeholders si no existen los archivos)
+        try:
+            self.new_icon = PhotoImage(file="icons/new_icon.png").subsample(3,3)
+            self.open_icon = PhotoImage(file="icons/open_icon.png").subsample(3,3)
+            self.save_icon = PhotoImage(file="icons/save_icon.png").subsample(3,3)
+            self.save_as_icon = PhotoImage(file="icons/save_as_icon.png").subsample(3,3)
+            self.close_icon = PhotoImage(file="icons/close_icon.png").subsample(3,3)
+            self.exit_icon = PhotoImage(file="icons/exit_icon.png").subsample(3,3)
+            self.undo_icon = PhotoImage(file="icons/undo_icon.png").subsample(2,2)
+            self.redo_icon = PhotoImage(file="icons/redo_icon.png").subsample(2,2)
+        except:
+            # Si no hay íconos, usar texto
+            self.new_icon = "Nuevo"
+            self.open_icon = "Abrir"
+            self.save_icon = "Guardar"
+            self.save_as_icon = "Guardar como"
+            self.close_icon = "Cerrar"
+            self.exit_icon = "Salir"
+            self.undo_icon = "Deshacer"
+            self.redo_icon = "Rehacer"
 
-        btn_new = tk.Button(toolbar, image=self.new_icon, command=self.new_file)
+        btn_new = tk.Button(toolbar, image=self.new_icon if isinstance(self.new_icon, PhotoImage) else None, 
+                          text=self.new_icon if not isinstance(self.new_icon, PhotoImage) else None,
+                          command=self.new_file)
         btn_new.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_new, "Nuevo Archivo")
 
-        btn_open = tk.Button(toolbar, image=self.open_icon, command=self.open_file)
+        btn_open = tk.Button(toolbar, image=self.open_icon if isinstance(self.open_icon, PhotoImage) else None,
+                           text=self.open_icon if not isinstance(self.open_icon, PhotoImage) else None,
+                           command=self.open_file)
         btn_open.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_open, "Abrir")
 
-        btn_save = tk.Button(toolbar, image=self.save_icon, command=self.save_file)
+        btn_save = tk.Button(toolbar, image=self.save_icon if isinstance(self.save_icon, PhotoImage) else None,
+                           text=self.save_icon if not isinstance(self.save_icon, PhotoImage) else None,
+                           command=self.save_file)
         btn_save.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_save, "Guardar")
 
-        btn_save_as = tk.Button(toolbar, image=self.save_as_icon, command=self.save_file_as)
+        btn_save_as = tk.Button(toolbar, image=self.save_as_icon if isinstance(self.save_as_icon, PhotoImage) else None,
+                              text=self.save_as_icon if not isinstance(self.save_as_icon, PhotoImage) else None,
+                              command=self.save_file_as)
         btn_save_as.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_save_as, "Guardar como")
 
-        btn_close = tk.Button(toolbar, image=self.close_icon, command=self.close_file)
+        btn_close = tk.Button(toolbar, image=self.close_icon if isinstance(self.close_icon, PhotoImage) else None,
+                            text=self.close_icon if not isinstance(self.close_icon, PhotoImage) else None,
+                            command=self.close_file)
         btn_close.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_close, "Cerrar")
 
-        btn_exit = tk.Button(toolbar, image=self.exit_icon, command=self.root.quit)
+        btn_exit = tk.Button(toolbar, image=self.exit_icon if isinstance(self.exit_icon, PhotoImage) else None,
+                           text=self.exit_icon if not isinstance(self.exit_icon, PhotoImage) else None,
+                           command=self.root.quit)
         btn_exit.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_exit, "Salir")
 
@@ -230,11 +242,15 @@ class IDE:
         separator.pack(side=tk.LEFT, padx=5, fill=tk.Y)
 
         # Botones de Deshacer y Rehacer
-        btn_undo = tk.Button(toolbar, image=self.undo_icon, command=self.undo)
+        btn_undo = tk.Button(toolbar, image=self.undo_icon if isinstance(self.undo_icon, PhotoImage) else None,
+                            text=self.undo_icon if not isinstance(self.undo_icon, PhotoImage) else None,
+                            command=self.undo)
         btn_undo.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_undo, "Deshacer")
 
-        btn_redo = tk.Button(toolbar, image=self.redo_icon, command=self.redo)
+        btn_redo = tk.Button(toolbar, image=self.redo_icon if isinstance(self.redo_icon, PhotoImage) else None,
+                            text=self.redo_icon if not isinstance(self.redo_icon, PhotoImage) else None,
+                            command=self.redo)
         btn_redo.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_redo, "Rehacer")
 
@@ -305,7 +321,7 @@ class IDE:
         self.linenumbers.attach(self.editor)
 
         # Configurar eventos para redibujar los números de línea
-        self.editor.bind("<<Modified>>", self._on_change)
+        self.editor.bind("<<TextModified>>", self._on_change)
         self.editor.bind("<Configure>", self._on_change)
         
 
@@ -352,9 +368,6 @@ class IDE:
 
     def _on_change(self, event=None):
         self.linenumbers.redraw()
-        
-        self.editor.highlight_syntax()
-        
 
     def create_cursor_indicator(self):
         # Frame para el indicador de cursor
@@ -374,22 +387,57 @@ class IDE:
         cursor_index = self.editor.index(tk.INSERT)
         line, column = cursor_index.split(".")
         self.cursor_label.config(text=f"Línea: {line}, Columna: {column}")
-        
 
     def create_error_window(self):
-        # Frame para la ventana de errores
-        self.error_frame = tk.Frame(self.root)
-        self.error_frame.pack(fill=tk.BOTH, expand=False)
-
-        # Ventana de errores
-        self.output_errores = tk.Text(self.error_frame, wrap=tk.WORD, width=80, height=10)
+    # Frame para la ventana de errores
+        self.error_frame = tk.Frame(self.root, bd=2, relief=tk.GROOVE)
+        self.error_frame.pack(fill=tk.BOTH, expand=False, padx=5, pady=5)
+        
+        # Etiqueta de título con estilo destacado
+        error_label = tk.Label(self.error_frame, text="PANEL DE ERRORES", 
+                            bg="#ffebeb", fg="red", 
+                            font=('Arial', 10, 'bold'), padx=5, pady=2)
+        error_label.pack(fill=tk.X)
+        
+        # Contenedor principal con borde
+        error_container = tk.Frame(self.error_frame, bd=1, relief=tk.SUNKEN)
+        error_container.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        
+        # Área de texto para errores
+        self.output_errores = tk.Text(error_container, 
+                                    wrap=tk.WORD, 
+                                    width=80, 
+                                    height=8,
+                                    bg="white", 
+                                    fg="black", 
+                                    font=('Consolas', 9),
+                                    state=tk.DISABLED,  # Inicialmente en modo solo lectura
+                                    padx=5, pady=5)
+        
+        # Scrollbar vertical
+        scrollbar = ttk.Scrollbar(error_container, command=self.output_errores.yview)
+        self.output_errores.config(yscrollcommand=scrollbar.set)
+        
+        # Diseño con grid para mejor ajuste
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.output_errores.pack(fill=tk.BOTH, expand=True)
-
+        
+        # Configurar tags para formato de texto
+        self.output_errores.tag_config("error_header", foreground="red", font=('Arial', 10, 'bold'))
+        self.output_errores.tag_config("error_detail", foreground="black", font=('Consolas', 9))
+        self.output_errores.tag_config("no_errors", foreground="green", font=('Arial', 9, 'italic'))
+    
+    # Bloquear completamente la edición del panel
+        def block_event(event):
+            return "break"
+    
+        for event in ["<Key>", "<Button-1>", "<Button-2>", "<Button-3>", "<B1-Motion>"]:
+            self.output_errores.bind(event, block_event)
     def new_file(self):
         self.editor.delete(1.0, tk.END)
         self.output_errores.delete(1.0, tk.END)
-        self.filepath = None  # Al crear un nuevo archivo, no tiene ruta asignada
-        self.editor.highlight_syntax()  # Resaltar sintaxis en un nuevo archivo
+        self.filepath = None
+        self.editor.highlight_syntax()
 
     def open_file(self):
         filepath = filedialog.askopenfilename(
@@ -399,60 +447,114 @@ class IDE:
             with open(filepath, "r") as file:
                 self.editor.delete(1.0, tk.END)
                 self.editor.insert(tk.END, file.read())
-            
-            self.filepath = filepath  
-            self.editor.highlight_syntax() 
-
-
+            self.filepath = filepath
+            self.editor.highlight_syntax()
 
     def save_file(self):
         if self.filepath:
-            # Si ya tiene un nombre, sobreescribe sin preguntar
             with open(self.filepath, "w") as file:
                 file.write(self.editor.get(1.0, tk.END))
         else:
-            self.save_file_as()  
+            self.save_file_as()
 
     def save_file_as(self):
         filepath = filedialog.asksaveasfilename(
             defaultextension=".txt",
-            initialfile="nuevo_documento.txt",
             filetypes=[("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*")]
         )
         if filepath:
-            self.filepath = filepath  # Guarda la nueva ruta
-            with open(filepath, "w") as file:
-                file.write(self.editor.get(1.0, tk.END))
+            self.filepath = filepath
+            self.save_file()
 
     def close_file(self):
-        self.editor.delete(1.0, tk.END)
-        self.output_errores.delete(1.0, tk.END)
-        self.filepath = None  # Restablecer la ruta al cerrar el archivo
+        self.new_file()
 
     def undo(self):
-        '''Deshacer la última acción en el editor'''
         try:
             self.editor.edit_undo()
         except tk.TclError:
-            pass  # No hay más acciones para deshacer
+            pass
 
     def redo(self):
-        '''Rehacer la última acción en el editor'''
         try:
             self.editor.edit_redo()
         except tk.TclError:
-            pass  # No hay más acciones para rehacer
+            pass
 
     def compile_lexico(self):
-        self.output_lexico.delete(1.0, tk.END)
-        self.output_errores.delete(1.0, tk.END)
-        input_text = self.editor.get(1.0, tk.END)
-        tokens = test_lexer(input_text)
-        for tok in tokens:
-            self.output_lexico.insert(tk.END, f"Token: {tok}\n")
-            if tok.type == 'ERROR':
-                self.output_errores.insert(tk.END, f"Error léxico: {tok.value} en línea {tok.lineno}\n")
-
+        try:
+            print("\n=== INICIANDO COMPILACIÓN LÉXICA ===")  # Depuración
+            
+            self.output_lexico.delete(1.0, tk.END)
+            self.output_errores.config(state=tk.NORMAL)
+            self.output_errores.delete(1.0, tk.END)
+            
+            input_text = self.editor.get(1.0, tk.END)
+            print(f"Texto obtenido del editor (primeros 100 chars):\n{input_text[:100]}")  # Depuración
+            
+            # Dividir el texto en líneas para cálculo de columnas
+            lines = input_text.split('\n')
+            print(f"Número de líneas: {len(lines)}")  # Depuración
+            
+            tokens = test_lexer(input_text)
+            print(f"Tokens obtenidos ({len(tokens)}):")  # Depuración
+            for i, tok in enumerate(tokens[:10]):  # Mostrar solo los primeros 10 para depuración
+                print(f"{i}: {tok}")
+            
+            error_count = 0
+            self.output_errores.insert(tk.END, "=== ERRORES LÉXICOS ===\n", "error_header")
+            
+            for tok in tokens:
+                self.output_lexico.insert(tk.END, f"Token: {tok}\n")
+                
+                if tok.type == 'ERROR':
+                    error_count += 1
+                    line_num = tok.lineno
+                    
+                    # Cálculo preciso de la columna
+                    if line_num > len(lines):
+                        print(f"¡ADVERTENCIA! Número de línea {line_num} excede el total de líneas ({len(lines)})")
+                        continue
+                    
+                    line_text = lines[line_num-1] if (line_num-1) < len(lines) else ""
+                    print(f"Procesando error en línea {line_num}: '{line_text}'")  # Depuración
+                    
+                    # Calcular posición en la línea actual
+                    try:
+                        prev_lines_length = sum(len(lines[i]) + 1 for i in range(line_num - 1))  # cuenta \n
+                        col_num = tok.lexpos - prev_lines_length + 1
+                    except:
+                        col_num = 1  # fallback en caso de error
+                    
+                    print(f"Posición calculada: línea {line_num}, col {col_num}")  # Depuración
+                    
+                    # Mostrar información del error
+                    error_msg = (f"Error {error_count}:\n"
+                            f"Línea: {line_num}, Columna: {col_num}\n"
+                            f"Token inválido: '{tok.value}'\n"
+                            f"Contexto: {line_text.strip()}\n"
+                            f"{' '*(col_num-1)}^\n\n")
+                    
+                    print("Mensaje de error a mostrar:\n" + error_msg)  # Depuración
+                    
+                    self.output_errores.insert(tk.END, error_msg, "error_detail")
+                    self.editor.tag_add("ERROR", f"{line_num}.{col_num-1}", f"{line_num}.{col_num}")
+            
+            if error_count == 0:
+                self.output_errores.insert(tk.END, "No se encontraron errores léxicos.\n", "no_errors")
+                print("No se encontraron errores léxicos")  # Depuración
+            
+            self.output_errores.config(state=tk.DISABLED)
+            print(f"=== FINALIZADA COMPILACIÓN LÉXICA. Errores encontrados: {error_count} ===")  # Depuración
+            
+        except Exception as e:
+            print(f"EXCEPCIÓN durante compilación léxica: {str(e)}")  # Depuración
+            self.output_errores.config(state=tk.NORMAL)
+            self.output_errores.insert(tk.END, f"Error durante análisis léxico: {str(e)}\n", "error_detail")
+            self.output_errores.config(state=tk.DISABLED)
+            raise
+    
+    
     def compile_sintactico(self):
         self.output_sintactico.delete(1.0, tk.END)
         self.output_errores.delete(1.0, tk.END)
@@ -481,13 +583,11 @@ class IDE:
     def compile_hash(self):
         self.output_hash.delete(1.0, tk.END)
         input_text = self.editor.get(1.0, tk.END)
-        # Aquí iría la lógica para compilar el código a hash
         self.output_hash.insert(tk.END, "Hash generado.\n")
 
     def compile_ejecucion(self):
         self.output_ejecucion.delete(1.0, tk.END)
         input_text = self.editor.get(1.0, tk.END)
-        # Aquí iría la lógica para ejecutar el código
         self.output_ejecucion.insert(tk.END, "Ejecución completada.\n")
 
 if __name__ == "__main__":

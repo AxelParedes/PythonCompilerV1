@@ -10,6 +10,7 @@ from pygments.lexers import get_lexer_by_name
 from pygments.token import Token
 from pygments.style import Style
 from pygments.util import ClassNotFound
+import re
 tk._default_root = None
 
 
@@ -92,54 +93,91 @@ class CustomText(tk.Text):
 
     def highlight_syntax(self):
         """Resalta la sintaxis del texto en el editor"""
-        # Limpiar todos los tags existentes
-        for tag in self.tag_names():
-            self.tag_remove(tag, "1.0", tk.END)
-        
-        # Obtener el texto completo
-        text = self.get("1.0", tk.END)
-        
         try:
-            # Usar un lexer similar a C++ (ajustar según necesidades)
-            lexer = get_lexer_by_name("cpp", stripall=True)
+            # Limpiar todos los tags existentes primero
+            for tag in self.tag_names():
+                self.tag_remove(tag, "1.0", tk.END)
             
-            # Aplicar el lexer al texto
-            for token_type, value in lex(text, lexer):
-                # Mapear los tokens de Pygments a nuestros tags
-                if token_type in Token.Comment:
-                    tag = "COMMENT"
-                elif value == 'main':  # <-- CAMBIO ESPECÍFICO PARA 'main'
-                    tag = "RESERVED"
-                elif token_type in Token.Keyword:
-                    tag = "RESERVED"
-                elif token_type in Token.Name:
-                    tag = "ID"
-                elif token_type in Token.Literal.Number.Integer:
-                    tag = "NUMBER"
-                elif token_type in Token.Literal.Number.Float:
-                    tag = "REAL"
-                elif token_type in Token.Operator:
-                    tag = "OPERATOR"
-                elif token_type in Token.Operator.Word:
-                    tag = "LOGICAL"
-                elif token_type in Token.Punctuation:
-                    tag = "SYMBOL"
-                else:
-                    continue  # Ignorar otros tokens
-                
-                # Buscar y aplicar tags a todas las ocurrencias
+            # Obtener el texto completo
+            text = self.get("1.0", tk.END)
+            if not text.strip():
+                return
+
+            # Primero procesar palabras reservadas exactas
+            for word in reserved:
                 start = "1.0"
                 while True:
-                    start = self.search(value, start, stopindex=tk.END)
+                    # Buscar usando regex para coincidencia exacta de palabra
+                    start = self.search(rf'\m{word}\M', start, stopindex=tk.END, regexp=True)
                     if not start:
                         break
-                    end = f"{start}+{len(value)}c"
-                    self.tag_add(tag, start, end)
+                    end = f"{start}+{len(word)}c"
+                    # Verificar que los índices son válidos
+                    if self._is_valid_index(start) and self._is_valid_index(end):
+                        self.tag_add("RESERVED", start, end)
                     start = end
-        
-        except ClassNotFound:
-            pass
 
+            try:
+                # Usar lexer C++ para otros tokens
+                lexer = get_lexer_by_name("cpp", stripall=True)
+                
+                for token_type, value in lex(text, lexer):
+                    # Saltar si ya es palabra reservada
+                    if value in reserved:
+                        continue
+                    
+                    # Determinar el tag apropiado
+                    tag = None
+                    if token_type in Token.Comment:
+                        tag = "COMMENT"
+                    elif token_type in Token.Name:
+                        tag = "ID"
+                    elif token_type in Token.Literal.Number.Integer:
+                        tag = "NUMBER"
+                    elif token_type in Token.Literal.Number.Float:
+                        tag = "REAL"
+                    elif token_type in Token.Operator:
+                        tag = "OPERATOR"
+                    elif token_type in Token.Operator.Word:
+                        tag = "LOGICAL"
+                    elif token_type in Token.Punctuation:
+                        tag = "SYMBOL"
+                    
+                    if not tag:
+                        continue
+
+                    # Buscar todas las ocurrencias del valor
+                    start = "1.0"
+                    while True:
+                        start = self.search(re.escape(value), start, stopindex=tk.END, regexp=True)
+                        if not start:
+                            break
+                        end = f"{start}+{len(value)}c"
+                        
+                        # Verificar índices y que no sea parte de una palabra reservada
+                        if (self._is_valid_index(start) and self._is_valid_index(end) and 
+                            "RESERVED" not in self.tag_names(start)):
+                            self.tag_add(tag, start, end)
+                        start = end
+
+            except ClassNotFound:
+                pass
+            except Exception as e:
+                print(f"Error en el lexer: {e}")
+
+        except Exception as e:
+            print(f"Error general en highlight_syntax: {e}")
+            # Limpiar tags en caso de error
+            for tag in self.tag_names():
+                self.tag_remove(tag, "1.0", tk.END)
+
+    def _is_valid_index(self, index):
+        """Verifica si un índice de texto es válido"""
+        try:
+            self.index(index)
+            return True
+        except tk.TclError:
+            return False
 class IDE:
     def __init__(self, root):
         self.root = root
@@ -444,11 +482,29 @@ class IDE:
             filetypes=[("Archivos de texto", "*.txt"), ("Todos los archivos", "*.*")]
         )
         if filepath:
-            with open(filepath, "r") as file:
-                self.editor.delete(1.0, tk.END)
-                self.editor.insert(tk.END, file.read())
-            self.filepath = filepath
+            try:
+                with open(filepath, "r") as file:
+                    self.editor.delete(1.0, tk.END)
+                    self.editor.insert(tk.END, file.read())
+                self.filepath = filepath
+                # Programar el resaltado después de un pequeño retraso
+                self.editor.after(100, self.safe_highlight)
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir el archivo: {str(e)}")
+
+    def safe_highlight(self):
+        """Versión segura del resaltado que maneja errores"""
+        try:
             self.editor.highlight_syntax()
+        except Exception as e:
+            print(f"Error durante el resaltado: {e}")
+
+                
+        except Exception as e:
+            print(f"Error en highlight_syntax: {e}")
+            # Si hay un error, al menos limpiar los tags para evitar inconsistencia
+            for tag in self.tag_names():
+                self.tag_remove(tag, "1.0", tk.END)
 
     def save_file(self):
         if self.filepath:
@@ -483,24 +539,19 @@ class IDE:
 
     def compile_lexico(self):
         try:
-            print("\n=== INICIANDO COMPILACIÓN LÉXICA ===")  # Depuración
-            
             self.output_lexico.delete(1.0, tk.END)
             self.output_errores.config(state=tk.NORMAL)
             self.output_errores.delete(1.0, tk.END)
             
             input_text = self.editor.get(1.0, tk.END)
-            print(f"Texto obtenido del editor (primeros 100 chars):\n{input_text[:100]}")  # Depuración
+            lines = [line.replace('\t', '    ') for line in input_text.split('\n')]  # Convertir tabs a espacios
             
-            # Dividir el texto en líneas para cálculo de columnas
-            lines = input_text.split('\n')
-            print(f"Número de líneas: {len(lines)}")  # Depuración
-            
+            # Calcular offsets de líneas considerando tabs
+            line_offsets = [0]
+            for i in range(len(lines)-1):
+                line_offsets.append(line_offsets[-1] + len(lines[i]) + 1)  # +1 por el \n
+
             tokens = test_lexer(input_text)
-            print(f"Tokens obtenidos ({len(tokens)}):")  # Depuración
-            for i, tok in enumerate(tokens[:10]):  # Mostrar solo los primeros 10 para depuración
-                print(f"{i}: {tok}")
-            
             error_count = 0
             self.output_errores.insert(tk.END, "=== ERRORES LÉXICOS ===\n", "error_header")
             
@@ -511,49 +562,51 @@ class IDE:
                     error_count += 1
                     line_num = tok.lineno
                     
-                    # Cálculo preciso de la columna
-                    if line_num > len(lines):
-                        print(f"¡ADVERTENCIA! Número de línea {line_num} excede el total de líneas ({len(lines)})")
+                    if line_num > len(lines) or line_num < 1:
                         continue
                     
-                    line_text = lines[line_num-1] if (line_num-1) < len(lines) else ""
-                    print(f"Procesando error en línea {line_num}: '{line_text}'")  # Depuración
+                    # Calcular posición visual exacta (considerando tabs)
+                    line_start_pos = line_offsets[line_num - 1]
+                    raw_col = tok.lexpos - line_start_pos
                     
-                    # Calcular posición en la línea actual
-                    try:
-                        prev_lines_length = sum(len(lines[i]) + 1 for i in range(line_num - 1))  # cuenta \n
-                        col_num = tok.lexpos - prev_lines_length + 1
-                    except:
-                        col_num = 1  # fallback en caso de error
-                    
-                    print(f"Posición calculada: línea {line_num}, col {col_num}")  # Depuración
+                    # Ajustar columna para coincidir con la posición visual
+                    current_line = lines[line_num - 1]
+                    visual_col = 0
+                    for i, char in enumerate(current_line[:raw_col]):
+                        visual_col += 4 if char == '\t' else 1
+                    visual_col += 3  # Convertir a base 1
                     
                     # Mostrar información del error
-                    error_msg = (f"Error {error_count}:\n"
-                            f"Línea: {line_num}, Columna: {col_num}\n"
-                            f"Token inválido: '{tok.value}'\n"
-                            f"Contexto: {line_text.strip()}\n"
-                            f"{' '*(col_num-1)}^\n\n")
-                    
-                    print("Mensaje de error a mostrar:\n" + error_msg)  # Depuración
+                    error_msg = (f"Error {error_count}:"
+                                f"Línea: {line_num}, Columna: {visual_col}\n")
                     
                     self.output_errores.insert(tk.END, error_msg, "error_detail")
-                    self.editor.tag_add("ERROR", f"{line_num}.{col_num-1}", f"{line_num}.{col_num}")
+                    
+                    # Resaltar el error en el editor (usando posición visual)
+                    start_index = f"{line_num}.{visual_col-1}"
+                    end_index = f"{line_num}.{visual_col-1+len(str(tok.value))}"
+                    
+                    try:
+                        self.editor.index(start_index)
+                        self.editor.index(end_index)
+                        self.editor.tag_add("ERROR", start_index, end_index)
+                    except tk.TclError:
+                        continue
             
             if error_count == 0:
                 self.output_errores.insert(tk.END, "No se encontraron errores léxicos.\n", "no_errors")
-                print("No se encontraron errores léxicos")  # Depuración
+            else:
+                self.output_errores.insert(tk.END, f"\nTotal de errores léxicos: {error_count}\n", "error_header")
             
             self.output_errores.config(state=tk.DISABLED)
-            print(f"=== FINALIZADA COMPILACIÓN LÉXICA. Errores encontrados: {error_count} ===")  # Depuración
             
         except Exception as e:
-            print(f"EXCEPCIÓN durante compilación léxica: {str(e)}")  # Depuración
             self.output_errores.config(state=tk.NORMAL)
             self.output_errores.insert(tk.END, f"Error durante análisis léxico: {str(e)}\n", "error_detail")
             self.output_errores.config(state=tk.DISABLED)
-            raise
-    
+            messagebox.showerror("Error", f"Ocurrió un error durante el análisis léxico: {str(e)}")
+            
+
     
     def compile_sintactico(self):
         self.output_sintactico.delete(1.0, tk.END)

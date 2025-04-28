@@ -182,7 +182,19 @@ class IDE:
     def __init__(self, root):
         self.root = root
         self.root.title("IDE para Compilador")
-        self.filepath = None  # Variable para almacenar la ruta del archivo
+        self.filepath = None
+        
+        # Inicializar todos los atributos necesarios
+        self.token_tree = None
+        self.output_errores = None
+        self.output_lexico = None
+        self.output_sintactico = None
+        self.output_semantico = None
+        self.output_intermedio = None
+        self.output_ejecucion = None
+        self.output_hash = None
+        
+        # Crear componentes en orden correcto
         self.create_menu()
         self.create_toolbar()
         self.create_editor_and_execution()
@@ -362,47 +374,133 @@ class IDE:
         self.editor.bind("<<TextModified>>", self._on_change)
         self.editor.bind("<Configure>", self._on_change)
         
-
         # Frame para la ventana de ejecución
         self.execution_frame = tk.Frame(self.main_frame)
         self.execution_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         # Pestañas de ejecución
         self.execution_tabs = ttk.Notebook(self.execution_frame)
+        
+        # ------------------------- Pestaña LÉXICO -------------------------
         self.tab_lexico = ttk.Frame(self.execution_tabs)
-        self.tab_sintactico = ttk.Frame(self.execution_tabs)
-        self.tab_semantico = ttk.Frame(self.execution_tabs)
-        self.tab_intermedio = ttk.Frame(self.execution_tabs)
-        self.tab_ejecucion = ttk.Frame(self.execution_tabs)
-        self.tab_hash = ttk.Frame(self.execution_tabs)
-
         self.execution_tabs.add(self.tab_lexico, text="Léxico")
+        
+        # Frame contenedor para la tabla
+        token_frame = tk.Frame(self.tab_lexico)
+        token_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Treeview para mostrar tokens
+        self.token_tree = ttk.Treeview(
+            token_frame, 
+            columns=("Lexema", "Token"), 
+            show="headings",
+            selectmode="extended"
+        )
+        
+        # Configurar columnas
+        self.token_tree.column("Lexema", width=150, anchor=tk.W, stretch=tk.YES)
+        self.token_tree.column("Token", width=120, anchor=tk.W, stretch=tk.YES)
+        # self.token_tree.column("Subtokens", width=120, anchor=tk.W, stretch=tk.YES)
+        
+        # Configurar encabezados
+        self.token_tree.heading("Lexema", text="LEXEMA", anchor=tk.W)
+        self.token_tree.heading("Token", text="TOKEN", anchor=tk.W)
+        # self.token_tree.heading("Subtokens", text="SUBTOKEN", anchor=tk.W)
+        
+        # Scrollbars
+        vsb = ttk.Scrollbar(token_frame, orient="vertical", command=self.token_tree.yview)
+        hsb = ttk.Scrollbar(token_frame, orient="horizontal", command=self.token_tree.xview)
+        self.token_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        
+        # Diseño con grid
+        self.token_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        token_frame.grid_rowconfigure(0, weight=1)
+        token_frame.grid_columnconfigure(0, weight=1)
+        
+        # ------------------------- Pestaña SINTÁCTICO -------------------------
+        self.tab_sintactico = ttk.Frame(self.execution_tabs)
         self.execution_tabs.add(self.tab_sintactico, text="Sintáctico")
-        self.execution_tabs.add(self.tab_semantico, text="Semántico")
-        self.execution_tabs.add(self.tab_intermedio, text="Intermedio")
-        self.execution_tabs.add(self.tab_ejecucion, text="Ejecución")
-        self.execution_tabs.add(self.tab_hash, text="Hash")
-
-        self.execution_tabs.pack(fill=tk.BOTH, expand=True)
-
-        # Ventanas de salida para cada pestaña
-        self.output_lexico = tk.Text(self.tab_lexico, wrap=tk.WORD, width=80, height=10)
-        self.output_lexico.pack(fill=tk.BOTH, expand=True)
-
-        self.output_sintactico = tk.Text(self.tab_sintactico, wrap=tk.WORD, width=80, height=10)
+        
+        self.output_sintactico = tk.Text(
+            self.tab_sintactico, 
+            wrap=tk.WORD, 
+            width=80, 
+            height=10,
+            bg="white",
+            fg="black",
+            font=("Consolas", 10)
+        )
         self.output_sintactico.pack(fill=tk.BOTH, expand=True)
-
-        self.output_semantico = tk.Text(self.tab_semantico, wrap=tk.WORD, width=80, height=10)
+        
+        # ------------------------- Pestaña SEMÁNTICO -------------------------
+        self.tab_semantico = ttk.Frame(self.execution_tabs)
+        self.execution_tabs.add(self.tab_semantico, text="Semántico")
+        
+        self.output_semantico = tk.Text(
+            self.tab_semantico, 
+            wrap=tk.WORD, 
+            width=80, 
+            height=10,
+            bg="white",
+            fg="black",
+            font=("Consolas", 10)
+        )
         self.output_semantico.pack(fill=tk.BOTH, expand=True)
-
-        self.output_intermedio = tk.Text(self.tab_intermedio, wrap=tk.WORD, width=80, height=10)
+        
+        # ------------------------- Pestaña INTERMEDIO -------------------------
+        self.tab_intermedio = ttk.Frame(self.execution_tabs)
+        self.execution_tabs.add(self.tab_intermedio, text="Intermedio")
+        
+        self.output_intermedio = tk.Text(
+            self.tab_intermedio, 
+            wrap=tk.WORD, 
+            width=80, 
+            height=10,
+            bg="white",
+            fg="black",
+            font=("Consolas", 10)
+        )
         self.output_intermedio.pack(fill=tk.BOTH, expand=True)
-
-        self.output_ejecucion = tk.Text(self.tab_ejecucion, wrap=tk.WORD, width=80, height=10)
+        
+        # ------------------------- Pestaña EJECUCIÓN -------------------------
+        self.tab_ejecucion = ttk.Frame(self.execution_tabs)
+        self.execution_tabs.add(self.tab_ejecucion, text="Ejecución")
+        
+        self.output_ejecucion = tk.Text(
+            self.tab_ejecucion, 
+            wrap=tk.WORD, 
+            width=80, 
+            height=10,
+            bg="white",
+            fg="black",
+            font=("Consolas", 10)
+        )
         self.output_ejecucion.pack(fill=tk.BOTH, expand=True)
         
-        self.output_hash = tk.Text(self.tab_hash, wrap=tk.WORD, width=80, height=10)
+        # ------------------------- Pestaña HASH -------------------------
+        self.tab_hash = ttk.Frame(self.execution_tabs)
+        self.execution_tabs.add(self.tab_hash, text="Hash")
+        
+        self.output_hash = tk.Text(
+            self.tab_hash, 
+            wrap=tk.WORD, 
+            width=80, 
+            height=10,
+            bg="white",
+            fg="black",
+            font=("Consolas", 10)
+        )
         self.output_hash.pack(fill=tk.BOTH, expand=True)
+        
+        # Mostrar todas las pestañas
+        self.execution_tabs.pack(fill=tk.BOTH, expand=True)
+        
+        # Configurar el peso de las filas y columnas para expansión
+        self.execution_frame.grid_rowconfigure(0, weight=1)
+        self.execution_frame.grid_columnconfigure(0, weight=1)
 
     def _on_change(self, event=None):
         self.linenumbers.redraw()
@@ -472,10 +570,41 @@ class IDE:
         for event in ["<Key>", "<Button-1>", "<Button-2>", "<Button-3>", "<B1-Motion>"]:
             self.output_errores.bind(event, block_event)
     def new_file(self):
+        # Limpiar editor
         self.editor.delete(1.0, tk.END)
-        self.output_errores.delete(1.0, tk.END)
+        
+        # Limpiar todos los paneles de resultados
+        self.clear_all_panels()
+        
+        # Resetear variables de estado
         self.filepath = None
+        self.editor.edit_reset()  # Resetear historial de undo/redo
+        
+        # Forzar actualización de la sintaxis
         self.editor.highlight_syntax()
+
+    def clear_all_panels(self):
+        """Limpia todos los paneles de resultados y errores"""
+        # Limpiar tabla de tokens
+        self.token_tree.delete(*self.token_tree.get_children())
+        
+        # Limpiar paneles de texto
+        panels = [
+            self.output_errores,
+            self.output_sintactico,
+            self.output_semantico,
+            self.output_intermedio,
+            self.output_ejecucion,
+            self.output_hash
+        ]
+        
+        for panel in panels:
+            panel.config(state=tk.NORMAL)
+            panel.delete(1.0, tk.END)
+            panel.config(state=tk.DISABLED)
+        
+        # Limpiar cualquier resaltado de errores
+        self.editor.tag_remove("ERROR", "1.0", tk.END)
 
     def open_file(self):
         filepath = filedialog.askopenfilename(
@@ -486,9 +615,9 @@ class IDE:
                 with open(filepath, "r") as file:
                     self.editor.delete(1.0, tk.END)
                     self.editor.insert(tk.END, file.read())
-                self.filepath = filepath
-                # Programar el resaltado después de un pequeño retraso
-                self.editor.after(100, self.safe_highlight)
+                    self.filepath = filepath
+                    # Programar el resaltado después de un pequeño retraso
+                    self.editor.after(100, self.safe_highlight)
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo abrir el archivo: {str(e)}")
 
@@ -539,60 +668,81 @@ class IDE:
 
     def compile_lexico(self):
         try:
-            self.output_lexico.delete(1.0, tk.END)
+            # Limpiar resultados anteriores
+            self.token_tree.delete(*self.token_tree.get_children())
             self.output_errores.config(state=tk.NORMAL)
             self.output_errores.delete(1.0, tk.END)
             
+            # Obtener texto actual
             input_text = self.editor.get(1.0, tk.END)
-            lines = [line.replace('\t', '    ') for line in input_text.split('\n')]  # Convertir tabs a espacios
+            lines = input_text.split('\n')
             
-            # Calcular offsets de líneas considerando tabs
-            line_offsets = [0]
-            for i in range(len(lines)-1):
-                line_offsets.append(line_offsets[-1] + len(lines[i]) + 1)  # +1 por el \n
-
+            if not input_text.strip():
+                self.output_errores.insert(tk.END, "El editor está vacío.\n", "no_errors")
+                self.output_errores.config(state=tk.DISABLED)
+                return
+                
+            # Procesar análisis léxico
             tokens = test_lexer(input_text)
             error_count = 0
             self.output_errores.insert(tk.END, "=== ERRORES LÉXICOS ===\n", "error_header")
             
+            # Nueva estrategia para calcular posiciones
+            current_pos = 0
+            line_num = 1
+            line_start_pos = 0
+            
             for tok in tokens:
-                self.output_lexico.insert(tk.END, f"Token: {tok}\n")
+                # Calcular línea y columna basado en el texto
+                while current_pos < tok.lexpos and line_num <= len(lines):
+                    line_end = line_start_pos + len(lines[line_num-1])
+                    if tok.lexpos >= line_end:
+                        current_pos = line_end + 1  # +1 por el \n
+                        line_start_pos = current_pos
+                        line_num += 1
+                    else:
+                        current_pos = tok.lexpos
                 
-                if tok.type == 'ERROR':
+                col_num = tok.lexpos - line_start_pos
+                
+                # Mostrar tokens válidos
+                if hasattr(tok, 'type') and tok.type != 'ERROR':
+                    self.token_tree.insert("", tk.END, values=(tok.value, tok.type, getattr(tok, 'subtoken', '')))
+                    continue
+                    
+                # Procesar errores
+                if getattr(tok, 'type', '') == 'ERROR':
                     error_count += 1
-                    line_num = tok.lineno
                     
-                    if line_num > len(lines) or line_num < 1:
+                    if line_num > len(lines):
                         continue
+                        
+                    current_line = lines[line_num-1] if line_num <= len(lines) else ""
                     
-                    # Calcular posición visual exacta (considerando tabs)
-                    line_start_pos = line_offsets[line_num - 1]
-                    raw_col = tok.lexpos - line_start_pos
+                    # Ajustar para errores específicos
+                    error_value = str(tok.value)
+                    error_length = len(error_value)
+                    error_start = col_num
                     
-                    # Ajustar columna para coincidir con la posición visual
-                    current_line = lines[line_num - 1]
-                    visual_col = 0
-                    for i, char in enumerate(current_line[:raw_col]):
-                        visual_col += 4 if char == '\t' else 1
-                    visual_col += 3  # Convertir a base 1
+                    if '@' in error_value:  # Caso sum@r
+                        error_start += error_value.index('@')
+                        error_length = 1
+                    elif error_value.count('.') > 1:  # Caso 34.34.34.34
+                        first_dot = error_value.index('.')
+                        error_start += error_value.index('.', first_dot + 1)
+                        error_length = 1
+                    elif '.' in error_value and any(c.isalpha() for c in error_value):  # Caso 32.algo
+                        error_start += error_value.index('.')
+                        error_length = len(error_value) - error_value.index('.')
                     
                     # Mostrar información del error
-                    error_msg = (f"Error {error_count}:"
-                                f"Línea: {line_num}, Columna: {visual_col}\n")
+                    error_msg = (f"Error {error_count}: '{tok.value}'\n"
+                                f"Línea: {line_num}, Columna: {error_start + 1}\n"
+                                f"Contexto: {current_line[:error_start]}>>>{current_line[error_start:error_start+error_length]}<<<{current_line[error_start+error_length:]}\n\n")
                     
                     self.output_errores.insert(tk.END, error_msg, "error_detail")
-                    
-                    # Resaltar el error en el editor (usando posición visual)
-                    start_index = f"{line_num}.{visual_col-1}"
-                    end_index = f"{line_num}.{visual_col-1+len(str(tok.value))}"
-                    
-                    try:
-                        self.editor.index(start_index)
-                        self.editor.index(end_index)
-                        self.editor.tag_add("ERROR", start_index, end_index)
-                    except tk.TclError:
-                        continue
             
+            # Mostrar resumen
             if error_count == 0:
                 self.output_errores.insert(tk.END, "No se encontraron errores léxicos.\n", "no_errors")
             else:
@@ -605,7 +755,7 @@ class IDE:
             self.output_errores.insert(tk.END, f"Error durante análisis léxico: {str(e)}\n", "error_detail")
             self.output_errores.config(state=tk.DISABLED)
             messagebox.showerror("Error", f"Ocurrió un error durante el análisis léxico: {str(e)}")
-            
+                
 
     
     def compile_sintactico(self):

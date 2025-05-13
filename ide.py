@@ -24,22 +24,53 @@ class TextLineNumbers(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
         self.textwidget = None
+        self.bind("<Configure>", self._on_configure)
 
     def attach(self, text_widget):
         self.textwidget = text_widget
+        # Configurar eventos para redibujar cuando se hace scroll o se modifica el texto
+        self.textwidget.bind("<Configure>", self._on_configure)
+        self.textwidget.bind("<MouseWheel>", self._on_mousewheel)
+        self.textwidget.bind("<Button-4>", self._on_mousewheel)  # Para Linux
+        self.textwidget.bind("<Button-5>", self._on_mousewheel)  # Para Linux
+
+    def _on_configure(self, event=None):
+        self.redraw()
+
+    def _on_mousewheel(self, event):
+        # Programar redibujo después de un pequeño retraso para que el scroll tenga efecto
+        self.after(10, self.redraw)
+        return None  # Permitir que el evento continúe
 
     def redraw(self, *args):
-        '''Redibuja los números de línea'''
+        '''Redibuja los números de línea para el texto visible'''
         self.delete("all")
-        i = self.textwidget.index("@0,0")
-        while True:
-            dline = self.textwidget.dlineinfo(i)
-            if dline is None:
-                break
+        
+        if not self.textwidget:
+            return
+            
+        # Obtener información sobre el texto visible
+        first_visible_line = int(self.textwidget.index("@0,0").split('.')[0])
+        last_visible_line = int(self.textwidget.index("@0,%d" % self.textwidget.winfo_height()).split('.')[0])
+        
+        # Ajustar para asegurarnos de cubrir todo el área visible
+        last_visible_line += 1
+        
+        # Dibujar solo las líneas visibles
+        for i in range(first_visible_line, last_visible_line + 1):
+            # Obtener posición y de la línea
+            dline = self.textwidget.dlineinfo(f"{i}.0")
+            if dline is None:  # Si la línea no existe
+                continue
             y = dline[1]
-            linenum = str(i).split(".")[0]
-            self.create_text(2, y, anchor="nw", text=linenum, fill="#555")
-            i = self.textwidget.index(f"{i}+1line")
+            # Dibujar el número de línea
+            self.create_text(
+                2, y, 
+                anchor="nw", 
+                text=str(i), 
+                fill="#555",
+                font=("Consolas", 10)  # Usar la misma fuente que el editor
+            )
 
 class CustomText(tk.Text):
     def __init__(self, *args, **kwargs):
@@ -103,7 +134,10 @@ class CustomText(tk.Text):
             if not text.strip():
                 return
 
-            # Primero procesar palabras reservadas exactas
+            # Primero procesar comentarios (para que tengan prioridad sobre operadores)
+            self._highlight_comments(text)
+            
+            # Luego procesar palabras reservadas exactas
             for word in reserved:
                 start = "1.0"
                 while True:
@@ -112,64 +146,112 @@ class CustomText(tk.Text):
                     if not start:
                         break
                     end = f"{start}+{len(word)}c"
-                    # Verificar que los índices son válidos
-                    if self._is_valid_index(start) and self._is_valid_index(end):
+                    # Verificar que los índices son válidos y que no está dentro de un comentario
+                    if (self._is_valid_index(start) and self._is_valid_index(end)
+                            and "COMMENT" not in self.tag_names(start)):
                         self.tag_add("RESERVED", start, end)
                     start = end
 
-            try:
-                # Usar lexer C++ para otros tokens
-                lexer = get_lexer_by_name("cpp", stripall=True)
-                
-                for token_type, value in lex(text, lexer):
-                    # Saltar si ya es palabra reservada
-                    if value in reserved:
-                        continue
-                    
-                    # Determinar el tag apropiado
-                    tag = None
-                    if token_type in Token.Comment:
-                        tag = "COMMENT"
-                    elif token_type in Token.Name:
-                        tag = "ID"
-                    elif token_type in Token.Literal.Number.Integer:
-                        tag = "NUMBER"
-                    elif token_type in Token.Literal.Number.Float:
-                        tag = "REAL"
-                    elif token_type in Token.Operator:
-                        tag = "OPERATOR"
-                    elif token_type in Token.Operator.Word:
-                        tag = "LOGICAL"
-                    elif token_type in Token.Punctuation:
-                        tag = "SYMBOL"
-                    
-                    if not tag:
-                        continue
-
-                    # Buscar todas las ocurrencias del valor
-                    start = "1.0"
-                    while True:
-                        start = self.search(re.escape(value), start, stopindex=tk.END, regexp=True)
-                        if not start:
-                            break
-                        end = f"{start}+{len(value)}c"
-                        
-                        # Verificar índices y que no sea parte de una palabra reservada
-                        if (self._is_valid_index(start) and self._is_valid_index(end) and 
-                            "RESERVED" not in self.tag_names(start)):
-                            self.tag_add(tag, start, end)
-                        start = end
-
-            except ClassNotFound:
-                pass
-            except Exception as e:
-                print(f"Error en el lexer: {e}")
+            # Finalmente procesar otros tokens
+            self._highlight_other_tokens(text)
 
         except Exception as e:
             print(f"Error general en highlight_syntax: {e}")
             # Limpiar tags en caso de error
             for tag in self.tag_names():
                 self.tag_remove(tag, "1.0", tk.END)
+
+    def _highlight_comments(self, text):
+        """Resalta los comentarios en el texto, incluyendo los multi-línea"""
+        in_block_comment = False
+        block_start = None
+        lines = text.split('\n')
+        
+        for i, line in enumerate(lines, start=1):
+            if not in_block_comment:
+                # Buscar inicio de comentario de bloque
+                block_start_pos = line.find('/*')
+                line_comment_pos = line.find('//')
+                
+                # Comentario de línea tiene prioridad si aparece antes
+                if line_comment_pos != -1 and (block_start_pos == -1 or line_comment_pos < block_start_pos):
+                    start = f"{i}.{line_comment_pos}"
+                    end = f"{i}.{len(line)}"
+                    self.tag_add("COMMENT", start, end)
+                elif block_start_pos != -1:
+                    # Encontramos inicio de comentario de bloque
+                    block_end_pos = line.find('*/', block_start_pos + 2)
+                    if block_end_pos != -1:
+                        # Comentario de bloque completo en una línea
+                        start = f"{i}.{block_start_pos}"
+                        end = f"{i}.{block_end_pos + 2}"
+                        self.tag_add("COMMENT", start, end)
+                    else:
+                        # Comentario de bloque continúa en siguientes líneas
+                        in_block_comment = True
+                        block_start = f"{i}.{block_start_pos}"
+            else:
+                # Estamos dentro de un comentario de bloque, buscar el cierre
+                block_end_pos = line.find('*/')
+                if block_end_pos != -1:
+                    # Fin del comentario de bloque
+                    end = f"{i}.{block_end_pos + 2}"
+                    self.tag_add("COMMENT", block_start, end)
+                    in_block_comment = False
+                    block_start = None
+                else:
+                    # Toda la línea es parte del comentario de bloque
+                    start = f"{i}.0"
+                    end = f"{i}.{len(line)}"
+                    self.tag_add("COMMENT", start, end)
+
+    def _highlight_other_tokens(self, text):
+        """Resalta otros tokens (operadores, números, etc.)"""
+        try:
+            # Usar lexer C++ para otros tokens
+            lexer = get_lexer_by_name("cpp", stripall=True)
+            
+            for token_type, value in lex(text, lexer):
+                # Saltar si ya es palabra reservada o comentario
+                if value in reserved or token_type in Token.Comment:
+                    continue
+                
+                # Determinar el tag apropiado
+                tag = None
+                if token_type in Token.Name:
+                    tag = "ID"
+                elif token_type in Token.Literal.Number.Integer:
+                    tag = "NUMBER"
+                elif token_type in Token.Literal.Number.Float:
+                    tag = "REAL"
+                elif token_type in Token.Operator:
+                    tag = "OPERATOR"
+                elif token_type in Token.Operator.Word:
+                    tag = "LOGICAL"
+                elif token_type in Token.Punctuation:
+                    tag = "SYMBOL"
+                
+                if not tag:
+                    continue
+
+                # Buscar todas las ocurrencias del valor
+                start = "1.0"
+                while True:
+                    start = self.search(re.escape(value), start, stopindex=tk.END, regexp=True)
+                    if not start:
+                        break
+                    end = f"{start}+{len(value)}c"
+                    
+                    # Verificar índices y que no sea parte de una palabra reservada o comentario
+                    if (self._is_valid_index(start) and self._is_valid_index(end) and 
+                        "COMMENT" not in self.tag_names(start)):
+                        self.tag_add(tag, start, end)
+                    start = end
+
+        except ClassNotFound:
+            pass
+        except Exception as e:
+            print(f"Error en el lexer: {e}")
 
     def _is_valid_index(self, index):
         """Verifica si un índice de texto es válido"""
@@ -389,19 +471,18 @@ class IDE:
         token_frame = tk.Frame(self.tab_lexico)
         token_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Treeview para mostrar tokens
         self.token_tree = ttk.Treeview(
-            token_frame, 
-            columns=("Lexema", "Token"), 
-            show="headings",
-            selectmode="extended"
-        )
-        
+        token_frame, 
+        columns=("Lexema", "Token", "Subtokens"), 
+        show="headings",
+        selectmode="extended"
+     )
+
         # Configurar columnas
         self.token_tree.column("Lexema", width=150, anchor=tk.W, stretch=tk.YES)
         self.token_tree.column("Token", width=120, anchor=tk.W, stretch=tk.YES)
-        # self.token_tree.column("Subtokens", width=120, anchor=tk.W, stretch=tk.YES)
-        
+        # self.token_tree.column("Subtokens", width=200, anchor=tk.W, stretch=tk.YES)
+
         # Configurar encabezados
         self.token_tree.heading("Lexema", text="LEXEMA", anchor=tk.W)
         self.token_tree.heading("Token", text="TOKEN", anchor=tk.W)
@@ -501,6 +582,35 @@ class IDE:
         # Configurar el peso de las filas y columnas para expansión
         self.execution_frame.grid_rowconfigure(0, weight=1)
         self.execution_frame.grid_columnconfigure(0, weight=1)
+        
+        scrollbar = ttk.Scrollbar(self.editor_frame, orient=tk.VERTICAL, command=self._on_scroll)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.editor.config(yscrollcommand=scrollbar.set)
+        
+        # Asociar el editor con los números de línea
+        self.linenumbers.attach(self.editor)
+        
+        # Configurar eventos para redibujar los números de línea
+        self.editor.bind("<<TextModified>>", self._on_change)
+        self.editor.bind("<Configure>", self._on_change)
+        self.editor.bind("<MouseWheel>", self._on_mousewheel)
+        
+        # ... (resto del código igual)
+
+    def _on_scroll(self, *args):
+        """Maneja el evento de scroll y actualiza los números de línea"""
+        # Primero ejecutar el scroll normal
+        self.editor.yview(*args)
+        # Luego actualizar los números de línea
+        self.linenumbers.redraw()
+
+    def _on_mousewheel(self, event):
+        """Maneja el evento de la rueda del mouse"""
+        # Permitir que el evento de scroll se procese normalmente
+        self.editor.yview_scroll(-1 * (event.delta // 120), "units")
+        # Programar una actualización de los números de línea
+        self.linenumbers.after(10, self.linenumbers.redraw)
+        return "break"
 
     def _on_change(self, event=None):
         self.linenumbers.redraw()

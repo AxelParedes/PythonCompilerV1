@@ -2,361 +2,183 @@ Created by PLY version 3.11 (http://www.dabeaz.com/ply)
 
 Unused terminals:
 
-    AND
     ASSIGN
-    BOOL
     CASE
     CHAR
-    CIN
-    COMMA
     COMMENT
-    COUT
-    DECREMENT
-    DO
-    EEQ
-    ELSE
-    END
-    EQ
     ERROR
-    FALSE
-    FLOAT
-    GE
-    GT
-    IF
-    INCREMENT
-    INT
     INVALID_COMMENT
     INVALID_ID
     INVALID_REAL
-    LBRACE
-    LE
-    LT
-    MAIN
-    MODULO
-    NE
-    NOT
-    OR
-    POWER
-    RBRACE
-    REAL
-    SEMICOLON
     STRING
     SWITCH
-    THEN
-    TRUE
     UNTIL
-    WHILE
 
 Grammar
 
-Rule 0     S' -> expression
-Rule 1     expression -> expression PLUS term
-Rule 2     expression -> expression MINUS term
-Rule 3     expression -> term
-Rule 4     term -> term TIMES factor
-Rule 5     term -> term DIVIDE factor
-Rule 6     term -> factor
-Rule 7     factor -> NUMBER
-Rule 8     factor -> LPAREN expression RPAREN
-Rule 9     factor -> ID
+Rule 0     S' -> programa
+Rule 1     programa -> MAIN LBRACE lista_declaracion RBRACE
+Rule 2     lista_declaracion -> lista_declaracion declaracion
+Rule 3     lista_declaracion -> declaracion
+Rule 4     declaracion -> declaracion_variable
+Rule 5     declaracion -> lista_sentencias
+Rule 6     declaracion_variable -> tipo identificador SEMICOLON
+Rule 7     identificador -> ID
+Rule 8     identificador -> identificador COMMA ID
+Rule 9     tipo -> INT
+Rule 10    tipo -> FLOAT
+Rule 11    tipo -> BOOL
+Rule 12    lista_sentencias -> lista_sentencias sentencia
+Rule 13    lista_sentencias -> empty
+Rule 14    sentencia -> seleccion
+Rule 15    sentencia -> iteracion
+Rule 16    sentencia -> repeticion
+Rule 17    sentencia -> sent_in
+Rule 18    sentencia -> sent_out
+Rule 19    sentencia -> asignacion
+Rule 20    sentencia -> incremento
+Rule 21    sentencia -> decremento
+Rule 22    incremento -> ID INCREMENT SEMICOLON
+Rule 23    decremento -> ID DECREMENT SEMICOLON
+Rule 24    asignacion -> ID EQ expresion SEMICOLON
+Rule 25    sent_expresion -> expresion SEMICOLON
+Rule 26    sent_expresion -> SEMICOLON
+Rule 27    seleccion -> IF expresion THEN lista_sentencias END
+Rule 28    seleccion -> IF expresion THEN lista_sentencias ELSE lista_sentencias END
+Rule 29    iteracion -> WHILE expresion lista_sentencias END
+Rule 30    repeticion -> DO lista_sentencias WHILE expresion SEMICOLON
+Rule 31    sent_in -> CIN RSHIFT ID SEMICOLON
+Rule 32    sent_out -> COUT LSHIFT salida SEMICOLON
+Rule 33    salida -> CADENA
+Rule 34    salida -> expresion
+Rule 35    salida -> CADENA LSHIFT expresion
+Rule 36    salida -> expresion LSHIFT CADENA
+Rule 37    expresion -> expresion_simple
+Rule 38    expresion -> expresion_simple rel_op expresion_simple
+Rule 39    rel_op -> LT
+Rule 40    rel_op -> LE
+Rule 41    rel_op -> GT
+Rule 42    rel_op -> GE
+Rule 43    rel_op -> EQ
+Rule 44    rel_op -> NE
+Rule 45    rel_op -> EEQ
+Rule 46    expresion_simple -> expresion_simple suma_op termino
+Rule 47    expresion_simple -> termino
+Rule 48    suma_op -> PLUS
+Rule 49    suma_op -> MINUS
+Rule 50    suma_op -> INCREMENT
+Rule 51    suma_op -> DECREMENT
+Rule 52    termino -> termino mult_op factor
+Rule 53    termino -> factor
+Rule 54    mult_op -> TIMES
+Rule 55    mult_op -> DIVIDE
+Rule 56    mult_op -> MODULO
+Rule 57    factor -> componente
+Rule 58    factor -> factor pot_op componente
+Rule 59    pot_op -> POWER
+Rule 60    componente -> LPAREN expresion RPAREN
+Rule 61    componente -> NUMBER
+Rule 62    componente -> REAL
+Rule 63    componente -> ID
+Rule 64    componente -> TRUE
+Rule 65    componente -> FALSE
+Rule 66    componente -> op_logico componente
+Rule 67    op_logico -> AND
+Rule 68    op_logico -> OR
+Rule 69    op_logico -> NOT
+Rule 70    expresion -> expresion AND expresion
+Rule 71    expresion -> expresion OR expresion
+Rule 72    expresion -> NOT expresion
+Rule 73    empty -> <empty>
 
 Terminals, with rules where they appear
 
-AND                  : 
+AND                  : 67 70
 ASSIGN               : 
-BOOL                 : 
+BOOL                 : 11
+CADENA               : 33 35 36
 CASE                 : 
 CHAR                 : 
-CIN                  : 
-COMMA                : 
+CIN                  : 31
+COMMA                : 8
 COMMENT              : 
-COUT                 : 
-DECREMENT            : 
-DIVIDE               : 5
-DO                   : 
-EEQ                  : 
-ELSE                 : 
-END                  : 
-EQ                   : 
+COUT                 : 32
+DECREMENT            : 23 51
+DIVIDE               : 55
+DO                   : 30
+EEQ                  : 45
+ELSE                 : 28
+END                  : 27 28 29
+EQ                   : 24 43
 ERROR                : 
-FALSE                : 
-FLOAT                : 
-GE                   : 
-GT                   : 
-ID                   : 9
-IF                   : 
-INCREMENT            : 
-INT                  : 
+FALSE                : 65
+FLOAT                : 10
+GE                   : 42
+GT                   : 41
+ID                   : 7 8 22 23 24 31 63
+IF                   : 27 28
+INCREMENT            : 22 50
+INT                  : 9
 INVALID_COMMENT      : 
 INVALID_ID           : 
 INVALID_REAL         : 
-LBRACE               : 
-LE                   : 
-LPAREN               : 8
-LT                   : 
-MAIN                 : 
-MINUS                : 2
-MODULO               : 
-NE                   : 
-NOT                  : 
-NUMBER               : 7
-OR                   : 
-PLUS                 : 1
-POWER                : 
-RBRACE               : 
-REAL                 : 
-RPAREN               : 8
-SEMICOLON            : 
+LBRACE               : 1
+LE                   : 40
+LPAREN               : 60
+LSHIFT               : 32 35 36
+LT                   : 39
+MAIN                 : 1
+MINUS                : 49
+MODULO               : 56
+NE                   : 44
+NOT                  : 69 72
+NUMBER               : 61
+OR                   : 68 71
+PLUS                 : 48
+POWER                : 59
+RBRACE               : 1
+REAL                 : 62
+RPAREN               : 60
+RSHIFT               : 31
+SEMICOLON            : 6 22 23 24 25 26 30 31 32
 STRING               : 
 SWITCH               : 
-THEN                 : 
-TIMES                : 4
-TRUE                 : 
+THEN                 : 27 28
+TIMES                : 54
+TRUE                 : 64
 UNTIL                : 
-WHILE                : 
+WHILE                : 29 30
 error                : 
 
 Nonterminals, with rules where they appear
 
-expression           : 1 2 8 0
-factor               : 4 5 6
-term                 : 1 2 3 4 5
-
-Parsing method: LALR
-
-state 0
-
-    (0) S' -> . expression
-    (1) expression -> . expression PLUS term
-    (2) expression -> . expression MINUS term
-    (3) expression -> . term
-    (4) term -> . term TIMES factor
-    (5) term -> . term DIVIDE factor
-    (6) term -> . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    expression                     shift and go to state 1
-    term                           shift and go to state 2
-    factor                         shift and go to state 3
-
-state 1
-
-    (0) S' -> expression .
-    (1) expression -> expression . PLUS term
-    (2) expression -> expression . MINUS term
-
-    PLUS            shift and go to state 7
-    MINUS           shift and go to state 8
-
-
-state 2
-
-    (3) expression -> term .
-    (4) term -> term . TIMES factor
-    (5) term -> term . DIVIDE factor
-
-    PLUS            reduce using rule 3 (expression -> term .)
-    MINUS           reduce using rule 3 (expression -> term .)
-    $end            reduce using rule 3 (expression -> term .)
-    RPAREN          reduce using rule 3 (expression -> term .)
-    TIMES           shift and go to state 9
-    DIVIDE          shift and go to state 10
-
-
-state 3
-
-    (6) term -> factor .
-
-    TIMES           reduce using rule 6 (term -> factor .)
-    DIVIDE          reduce using rule 6 (term -> factor .)
-    PLUS            reduce using rule 6 (term -> factor .)
-    MINUS           reduce using rule 6 (term -> factor .)
-    $end            reduce using rule 6 (term -> factor .)
-    RPAREN          reduce using rule 6 (term -> factor .)
-
-
-state 4
-
-    (7) factor -> NUMBER .
-
-    TIMES           reduce using rule 7 (factor -> NUMBER .)
-    DIVIDE          reduce using rule 7 (factor -> NUMBER .)
-    PLUS            reduce using rule 7 (factor -> NUMBER .)
-    MINUS           reduce using rule 7 (factor -> NUMBER .)
-    $end            reduce using rule 7 (factor -> NUMBER .)
-    RPAREN          reduce using rule 7 (factor -> NUMBER .)
-
-
-state 5
-
-    (8) factor -> LPAREN . expression RPAREN
-    (1) expression -> . expression PLUS term
-    (2) expression -> . expression MINUS term
-    (3) expression -> . term
-    (4) term -> . term TIMES factor
-    (5) term -> . term DIVIDE factor
-    (6) term -> . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    expression                     shift and go to state 11
-    term                           shift and go to state 2
-    factor                         shift and go to state 3
-
-state 6
-
-    (9) factor -> ID .
-
-    TIMES           reduce using rule 9 (factor -> ID .)
-    DIVIDE          reduce using rule 9 (factor -> ID .)
-    PLUS            reduce using rule 9 (factor -> ID .)
-    MINUS           reduce using rule 9 (factor -> ID .)
-    $end            reduce using rule 9 (factor -> ID .)
-    RPAREN          reduce using rule 9 (factor -> ID .)
-
-
-state 7
-
-    (1) expression -> expression PLUS . term
-    (4) term -> . term TIMES factor
-    (5) term -> . term DIVIDE factor
-    (6) term -> . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    term                           shift and go to state 12
-    factor                         shift and go to state 3
-
-state 8
-
-    (2) expression -> expression MINUS . term
-    (4) term -> . term TIMES factor
-    (5) term -> . term DIVIDE factor
-    (6) term -> . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    term                           shift and go to state 13
-    factor                         shift and go to state 3
-
-state 9
-
-    (4) term -> term TIMES . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    factor                         shift and go to state 14
-
-state 10
-
-    (5) term -> term DIVIDE . factor
-    (7) factor -> . NUMBER
-    (8) factor -> . LPAREN expression RPAREN
-    (9) factor -> . ID
-
-    NUMBER          shift and go to state 4
-    LPAREN          shift and go to state 5
-    ID              shift and go to state 6
-
-    factor                         shift and go to state 15
-
-state 11
-
-    (8) factor -> LPAREN expression . RPAREN
-    (1) expression -> expression . PLUS term
-    (2) expression -> expression . MINUS term
-
-    RPAREN          shift and go to state 16
-    PLUS            shift and go to state 7
-    MINUS           shift and go to state 8
-
-
-state 12
-
-    (1) expression -> expression PLUS term .
-    (4) term -> term . TIMES factor
-    (5) term -> term . DIVIDE factor
-
-    PLUS            reduce using rule 1 (expression -> expression PLUS term .)
-    MINUS           reduce using rule 1 (expression -> expression PLUS term .)
-    $end            reduce using rule 1 (expression -> expression PLUS term .)
-    RPAREN          reduce using rule 1 (expression -> expression PLUS term .)
-    TIMES           shift and go to state 9
-    DIVIDE          shift and go to state 10
-
-
-state 13
-
-    (2) expression -> expression MINUS term .
-    (4) term -> term . TIMES factor
-    (5) term -> term . DIVIDE factor
-
-    PLUS            reduce using rule 2 (expression -> expression MINUS term .)
-    MINUS           reduce using rule 2 (expression -> expression MINUS term .)
-    $end            reduce using rule 2 (expression -> expression MINUS term .)
-    RPAREN          reduce using rule 2 (expression -> expression MINUS term .)
-    TIMES           shift and go to state 9
-    DIVIDE          shift and go to state 10
-
-
-state 14
-
-    (4) term -> term TIMES factor .
-
-    TIMES           reduce using rule 4 (term -> term TIMES factor .)
-    DIVIDE          reduce using rule 4 (term -> term TIMES factor .)
-    PLUS            reduce using rule 4 (term -> term TIMES factor .)
-    MINUS           reduce using rule 4 (term -> term TIMES factor .)
-    $end            reduce using rule 4 (term -> term TIMES factor .)
-    RPAREN          reduce using rule 4 (term -> term TIMES factor .)
-
-
-state 15
-
-    (5) term -> term DIVIDE factor .
-
-    TIMES           reduce using rule 5 (term -> term DIVIDE factor .)
-    DIVIDE          reduce using rule 5 (term -> term DIVIDE factor .)
-    PLUS            reduce using rule 5 (term -> term DIVIDE factor .)
-    MINUS           reduce using rule 5 (term -> term DIVIDE factor .)
-    $end            reduce using rule 5 (term -> term DIVIDE factor .)
-    RPAREN          reduce using rule 5 (term -> term DIVIDE factor .)
-
-
-state 16
-
-    (8) factor -> LPAREN expression RPAREN .
-
-    TIMES           reduce using rule 8 (factor -> LPAREN expression RPAREN .)
-    DIVIDE          reduce using rule 8 (factor -> LPAREN expression RPAREN .)
-    PLUS            reduce using rule 8 (factor -> LPAREN expression RPAREN .)
-    MINUS           reduce using rule 8 (factor -> LPAREN expression RPAREN .)
-    $end            reduce using rule 8 (factor -> LPAREN expression RPAREN .)
-    RPAREN          reduce using rule 8 (factor -> LPAREN expression RPAREN .)
+asignacion           : 19
+componente           : 57 58 66
+declaracion          : 2 3
+declaracion_variable : 4
+decremento           : 21
+empty                : 13
+expresion            : 24 25 27 28 29 30 34 35 36 60 70 70 71 71 72
+expresion_simple     : 37 38 38 46
+factor               : 52 53 58
+identificador        : 6 8
+incremento           : 20
+iteracion            : 15
+lista_declaracion    : 1 2
+lista_sentencias     : 5 12 27 28 28 29 30
+mult_op              : 52
+op_logico            : 66
+pot_op               : 58
+programa             : 0
+rel_op               : 38
+repeticion           : 16
+salida               : 32
+seleccion            : 14
+sent_expresion       : 
+sent_in              : 17
+sent_out             : 18
+sentencia            : 12
+suma_op              : 46
+termino              : 46 47 52
+tipo                 : 6
 

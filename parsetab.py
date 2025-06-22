@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'AND ASSIGN BOOL CASE CHAR CIN COMMA COMMENT COUT DECREMENT DIVIDE DO EEQ ELSE END EQ ERROR FALSE FLOAT GE GT ID IF INCREMENT INT INVALID_COMMENT INVALID_ID INVALID_REAL LBRACE LE LPAREN LT MAIN MINUS MODULO NE NOT NUMBER OR PLUS POWER RBRACE REAL RPAREN SEMICOLON STRING SWITCH THEN TIMES TRUE UNTIL WHILEexpression : expression PLUS termexpression : expression MINUS termexpression : termterm : term TIMES factorterm : term DIVIDE factorterm : factorfactor : NUMBERfactor : LPAREN expression RPARENfactor : ID'
+_lr_signature = 'AND ASSIGN BOOL CADENA CASE CHAR CIN COMMA COMMENT COUT DECREMENT DIVIDE DO EEQ ELSE END EQ ERROR FALSE FLOAT GE GT ID IF INCREMENT INT INVALID_COMMENT INVALID_ID INVALID_REAL LBRACE LE LPAREN LT MAIN MINUS MODULO NE NOT NUMBER OR PLUS POWER RBRACE REAL RPAREN SEMICOLON STRING SWITCH THEN TIMES TRUE UNTIL WHILEprograma : MAIN LBRACE lista_declaracion RBRACElista_declaracion : lista_declaracion declaracion\n                         | declaraciondeclaracion : declaracion_variable\n                   | lista_sentenciasdeclaracion_variable : tipo identificador SEMICOLONidentificador : ID\n                     | identificador COMMA IDtipo : INT\n            | FLOAT\n            | BOOLlista_sentencias : lista_sentencias sentencia\n                        | emptysentencia : seleccion\n                 | iteracion\n                 | repeticion\n                 | sent_in\n                 | sent_out\n                 | asignacion\n                 | incremento\n                 | decrementoincremento : ID INCREMENT SEMICOLONdecremento : ID DECREMENT SEMICOLONasignacion : ID EQ expresion SEMICOLONsent_expresion : expresion SEMICOLON\n                      | SEMICOLONseleccion : IF expresion THEN lista_sentencias END\n                 | IF expresion THEN lista_sentencias ELSE lista_sentencias ENDiteracion : WHILE expresion lista_sentencias ENDrepeticion : DO lista_sentencias WHILE expresion SEMICOLONsent_in : CIN INCREMENT ID SEMICOLONsent_out : COUT DECREMENT salida SEMICOLONsalida : CADENA\n              | expresion\n              | CADENA DECREMENT expresion\n              | expresion DECREMENT CADENAexpresion : expresion_simple\n                 | expresion_simple rel_op expresion_simplerel_op : LT\n              | LE\n              | GT\n              | GE\n              | EQ\n              | NE\n              | EEQexpresion_simple : expresion_simple suma_op termino\n                        | terminosuma_op : PLUS\n               | MINUS\n               | INCREMENT\n               | DECREMENTtermino : termino mult_op factor\n               | factormult_op : TIMES\n               | DIVIDE\n               | MODULOfactor : componente\n              | factor pot_op componentepot_op : POWERcomponente : LPAREN expresion RPAREN\n                  | NUMBER\n                  | REAL\n                  | ID\n                  | TRUE\n                  | FALSE\n                  | op_logico componenteop_logico : AND\n                 | OR\n                 | NOTexpresion : expresion AND expresion\n                 | expresion OR expresion\n                 | NOT expresionempty :'
     
-_lr_action_items = {'NUMBER':([0,5,7,8,9,10,],[4,4,4,4,4,4,]),'LPAREN':([0,5,7,8,9,10,],[5,5,5,5,5,5,]),'ID':([0,5,7,8,9,10,],[6,6,6,6,6,6,]),'$end':([1,2,3,4,6,12,13,14,15,16,],[0,-3,-6,-7,-9,-1,-2,-4,-5,-8,]),'PLUS':([1,2,3,4,6,11,12,13,14,15,16,],[7,-3,-6,-7,-9,7,-1,-2,-4,-5,-8,]),'MINUS':([1,2,3,4,6,11,12,13,14,15,16,],[8,-3,-6,-7,-9,8,-1,-2,-4,-5,-8,]),'RPAREN':([2,3,4,6,11,12,13,14,15,16,],[-3,-6,-7,-9,16,-1,-2,-4,-5,-8,]),'TIMES':([2,3,4,6,12,13,14,15,16,],[9,-6,-7,-9,9,9,-4,-5,-8,]),'DIVIDE':([2,3,4,6,12,13,14,15,16,],[10,-6,-7,-9,10,10,-4,-5,-8,]),}
+_lr_action_items = {'MAIN':([0,],[2,]),'$end':([1,13,],[0,-1,]),'LBRACE':([2,],[3,]),'INT':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,54,86,87,100,102,103,104,107,109,113,],[10,10,-3,-4,-5,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-6,-22,-23,-29,-31,-24,-32,-27,-30,-28,]),'FLOAT':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,54,86,87,100,102,103,104,107,109,113,],[11,11,-3,-4,-5,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-6,-22,-23,-29,-31,-24,-32,-27,-30,-28,]),'BOOL':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,54,86,87,100,102,103,104,107,109,113,],[12,12,-3,-4,-5,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-6,-22,-23,-29,-31,-24,-32,-27,-30,-28,]),'IF':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,26,33,37,38,39,41,42,43,44,45,47,48,54,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-73,-73,-3,-4,24,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,24,-6,-73,-72,-66,24,-22,-23,24,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,24,-28,]),'WHILE':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,26,33,37,38,39,41,42,43,44,45,47,48,54,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-73,-73,-3,-4,25,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,83,-6,-73,-72,-66,25,-22,-23,25,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,25,-28,]),'DO':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,26,33,37,38,39,41,42,43,44,45,47,48,54,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-73,-73,-3,-4,26,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,26,-6,-73,-72,-66,26,-22,-23,26,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,26,-28,]),'CIN':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,26,33,37,38,39,41,42,43,44,45,47,48,54,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-73,-73,-3,-4,27,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,27,-6,-73,-72,-66,27,-22,-23,27,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,27,-28,]),'COUT':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,26,33,37,38,39,41,42,43,44,45,47,48,54,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-73,-73,-3,-4,29,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,29,-6,-73,-72,-66,29,-22,-23,29,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,29,-28,]),'ID':([3,4,5,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22,23,24,25,26,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,80,81,82,83,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,105,107,108,109,112,113,],[-73,-73,-3,-4,28,31,-13,-9,-10,-11,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,43,43,-73,-37,-67,-68,43,-47,-53,-57,43,-61,-62,-63,-64,-65,43,-73,28,84,43,43,-6,91,-73,43,43,43,43,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,-72,43,-54,-55,-56,43,-59,-66,-69,28,43,-22,-23,28,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,43,-27,-73,-30,28,-28,]),'RBRACE':([3,4,5,6,7,9,14,15,16,17,18,19,20,21,22,23,54,86,87,100,102,103,104,107,109,113,],[-73,13,-3,-4,-5,-13,-2,-12,-14,-15,-16,-17,-18,-19,-20,-21,-6,-22,-23,-29,-31,-24,-32,-27,-30,-28,]),'END':([9,15,16,17,18,19,20,21,22,23,33,37,38,39,41,42,43,44,45,47,56,72,80,82,86,87,92,93,94,95,96,97,98,99,100,101,102,103,104,107,108,109,112,113,],[-13,-12,-14,-15,-16,-17,-18,-19,-20,-21,-37,-47,-53,-57,-61,-62,-63,-64,-65,-73,-73,-72,-66,100,-22,-23,107,-70,-71,-38,-46,-52,-58,-60,-29,-73,-31,-24,-32,-27,-73,-30,113,-28,]),'ELSE':([9,15,16,17,18,19,20,21,22,23,56,86,87,92,100,102,103,104,107,109,113,],[-13,-12,-14,-15,-16,-17,-18,-19,-20,-21,-73,-22,-23,108,-29,-31,-24,-32,-27,-30,-28,]),'NOT':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[36,36,-67,-68,36,36,81,36,36,36,36,81,81,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,81,-54,-55,-56,81,-59,-69,36,36,]),'LPAREN':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[40,40,-67,-68,40,40,40,40,40,40,40,40,40,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,40,-54,-55,-56,40,-59,-69,40,40,]),'NUMBER':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[41,41,-67,-68,41,41,41,41,41,41,41,41,41,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,41,-54,-55,-56,41,-59,-69,41,41,]),'REAL':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[42,42,-67,-68,42,42,42,42,42,42,42,42,42,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,42,-54,-55,-56,42,-59,-69,42,42,]),'TRUE':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[44,44,-67,-68,44,44,44,44,44,44,44,44,44,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,44,-54,-55,-56,44,-59,-69,44,44,]),'FALSE':([24,25,34,35,36,40,46,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,73,74,75,76,77,78,81,83,105,],[45,45,-67,-68,45,45,45,45,45,45,45,45,45,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,45,-54,-55,-56,45,-59,-69,45,45,]),'AND':([24,25,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,83,85,90,93,94,95,96,97,98,99,101,105,110,],[34,34,57,-37,-67,-68,34,-47,-53,-57,34,-61,-62,-63,-64,-65,34,57,34,34,34,34,34,34,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,57,34,-54,-55,-56,34,-59,57,-66,-69,34,57,57,57,57,-38,-46,-52,-58,-60,57,34,57,]),'OR':([24,25,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,50,53,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,83,85,90,93,94,95,96,97,98,99,101,105,110,],[35,35,58,-37,-67,-68,35,-47,-53,-57,35,-61,-62,-63,-64,-65,35,58,35,35,35,35,35,35,-39,-40,-41,-42,-43,-44,-45,-48,-49,-50,-51,58,35,-54,-55,-56,35,-59,58,-66,-69,35,58,58,58,58,-38,-46,-52,-58,-60,58,35,58,]),'INCREMENT':([27,28,33,37,38,39,41,42,43,44,45,80,95,96,97,98,99,],[49,51,70,-47,-53,-57,-61,-62,-63,-64,-65,-66,70,-46,-52,-58,-60,]),'EQ':([28,33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[50,65,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'DECREMENT':([28,29,33,37,38,39,41,42,43,44,45,72,80,89,90,93,94,95,96,97,98,99,],[52,53,71,-47,-53,-57,-61,-62,-63,-64,-65,-72,-66,105,106,-70,-71,71,-46,-52,-58,-60,]),'SEMICOLON':([30,31,33,37,38,39,41,42,43,44,45,51,52,72,80,84,85,88,89,90,91,93,94,95,96,97,98,99,101,110,111,],[54,-7,-37,-47,-53,-57,-61,-62,-63,-64,-65,86,87,-72,-66,102,103,104,-33,-34,-8,-70,-71,-38,-46,-52,-58,-60,109,-35,-36,]),'COMMA':([30,31,91,],[55,-7,-8,]),'THEN':([32,33,37,38,39,41,42,43,44,45,72,80,93,94,95,96,97,98,99,],[56,-37,-47,-53,-57,-61,-62,-63,-64,-65,-72,-66,-70,-71,-38,-46,-52,-58,-60,]),'RPAREN':([33,37,38,39,41,42,43,44,45,72,79,80,93,94,95,96,97,98,99,],[-37,-47,-53,-57,-61,-62,-63,-64,-65,-72,99,-66,-70,-71,-38,-46,-52,-58,-60,]),'LT':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[61,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'LE':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[62,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'GT':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[63,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'GE':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[64,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'NE':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[66,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'EEQ':([33,37,38,39,41,42,43,44,45,80,96,97,98,99,],[67,-47,-53,-57,-61,-62,-63,-64,-65,-66,-46,-52,-58,-60,]),'PLUS':([33,37,38,39,41,42,43,44,45,80,95,96,97,98,99,],[68,-47,-53,-57,-61,-62,-63,-64,-65,-66,68,-46,-52,-58,-60,]),'MINUS':([33,37,38,39,41,42,43,44,45,80,95,96,97,98,99,],[69,-47,-53,-57,-61,-62,-63,-64,-65,-66,69,-46,-52,-58,-60,]),'TIMES':([37,38,39,41,42,43,44,45,80,96,97,98,99,],[74,-53,-57,-61,-62,-63,-64,-65,-66,74,-52,-58,-60,]),'DIVIDE':([37,38,39,41,42,43,44,45,80,96,97,98,99,],[75,-53,-57,-61,-62,-63,-64,-65,-66,75,-52,-58,-60,]),'MODULO':([37,38,39,41,42,43,44,45,80,96,97,98,99,],[76,-53,-57,-61,-62,-63,-64,-65,-66,76,-52,-58,-60,]),'POWER':([38,39,41,42,43,44,45,80,97,98,99,],[78,-57,-61,-62,-63,-64,-65,-66,78,-58,-60,]),'CADENA':([53,106,],[89,111,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'expression':([0,5,],[1,11,]),'term':([0,5,7,8,],[2,2,12,13,]),'factor':([0,5,7,8,9,10,],[3,3,3,3,14,15,]),}
+_lr_goto_items = {'programa':([0,],[1,]),'lista_declaracion':([3,],[4,]),'declaracion':([3,4,],[5,14,]),'declaracion_variable':([3,4,],[6,6,]),'lista_sentencias':([3,4,26,47,56,101,108,],[7,7,48,82,92,82,112,]),'tipo':([3,4,],[8,8,]),'empty':([3,4,26,47,56,101,108,],[9,9,9,9,9,9,9,]),'sentencia':([7,48,82,92,112,],[15,15,15,15,15,]),'seleccion':([7,48,82,92,112,],[16,16,16,16,16,]),'iteracion':([7,48,82,92,112,],[17,17,17,17,17,]),'repeticion':([7,48,82,92,112,],[18,18,18,18,18,]),'sent_in':([7,48,82,92,112,],[19,19,19,19,19,]),'sent_out':([7,48,82,92,112,],[20,20,20,20,20,]),'asignacion':([7,48,82,92,112,],[21,21,21,21,21,]),'incremento':([7,48,82,92,112,],[22,22,22,22,22,]),'decremento':([7,48,82,92,112,],[23,23,23,23,23,]),'identificador':([8,],[30,]),'expresion':([24,25,36,40,50,53,57,58,83,105,],[32,47,72,79,85,90,93,94,101,110,]),'expresion_simple':([24,25,36,40,50,53,57,58,59,83,105,],[33,33,33,33,33,33,33,33,95,33,33,]),'termino':([24,25,36,40,50,53,57,58,59,60,83,105,],[37,37,37,37,37,37,37,37,37,96,37,37,]),'factor':([24,25,36,40,50,53,57,58,59,60,73,83,105,],[38,38,38,38,38,38,38,38,38,38,97,38,38,]),'componente':([24,25,36,40,46,50,53,57,58,59,60,73,77,83,105,],[39,39,39,39,80,39,39,39,39,39,39,39,98,39,39,]),'op_logico':([24,25,36,40,46,50,53,57,58,59,60,73,77,83,105,],[46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,]),'rel_op':([33,],[59,]),'suma_op':([33,95,],[60,60,]),'mult_op':([37,96,],[73,73,]),'pot_op':([38,97,],[77,77,]),'salida':([53,],[88,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -26,14 +26,78 @@ for _k, _v in _lr_goto_items.items():
        _lr_goto[_x][_k] = _y
 del _lr_goto_items
 _lr_productions = [
-  ("S' -> expression","S'",1,None,None,None),
-  ('expression -> expression PLUS term','expression',3,'p_expression_plus','sintactico.py',6),
-  ('expression -> expression MINUS term','expression',3,'p_expression_minus','sintactico.py',10),
-  ('expression -> term','expression',1,'p_expression_term','sintactico.py',14),
-  ('term -> term TIMES factor','term',3,'p_term_times','sintactico.py',18),
-  ('term -> term DIVIDE factor','term',3,'p_term_div','sintactico.py',22),
-  ('term -> factor','term',1,'p_term_factor','sintactico.py',28),
-  ('factor -> NUMBER','factor',1,'p_factor_num','sintactico.py',32),
-  ('factor -> LPAREN expression RPAREN','factor',3,'p_factor_expr','sintactico.py',36),
-  ('factor -> ID','factor',1,'p_factor_id','sintactico.py',40),
+  ("S' -> programa","S'",1,None,None,None),
+  ('programa -> MAIN LBRACE lista_declaracion RBRACE','programa',4,'p_programa','sintactico.py',22),
+  ('lista_declaracion -> lista_declaracion declaracion','lista_declaracion',2,'p_lista_declaracion','sintactico.py',26),
+  ('lista_declaracion -> declaracion','lista_declaracion',1,'p_lista_declaracion','sintactico.py',27),
+  ('declaracion -> declaracion_variable','declaracion',1,'p_declaracion','sintactico.py',33),
+  ('declaracion -> lista_sentencias','declaracion',1,'p_declaracion','sintactico.py',34),
+  ('declaracion_variable -> tipo identificador SEMICOLON','declaracion_variable',3,'p_declaracion_variable','sintactico.py',38),
+  ('identificador -> ID','identificador',1,'p_identificador','sintactico.py',41),
+  ('identificador -> identificador COMMA ID','identificador',3,'p_identificador','sintactico.py',42),
+  ('tipo -> INT','tipo',1,'p_tipo','sintactico.py',49),
+  ('tipo -> FLOAT','tipo',1,'p_tipo','sintactico.py',50),
+  ('tipo -> BOOL','tipo',1,'p_tipo','sintactico.py',51),
+  ('lista_sentencias -> lista_sentencias sentencia','lista_sentencias',2,'p_lista_sentencias','sintactico.py',55),
+  ('lista_sentencias -> empty','lista_sentencias',1,'p_lista_sentencias','sintactico.py',56),
+  ('sentencia -> seleccion','sentencia',1,'p_sentencia','sintactico.py',61),
+  ('sentencia -> iteracion','sentencia',1,'p_sentencia','sintactico.py',62),
+  ('sentencia -> repeticion','sentencia',1,'p_sentencia','sintactico.py',63),
+  ('sentencia -> sent_in','sentencia',1,'p_sentencia','sintactico.py',64),
+  ('sentencia -> sent_out','sentencia',1,'p_sentencia','sintactico.py',65),
+  ('sentencia -> asignacion','sentencia',1,'p_sentencia','sintactico.py',66),
+  ('sentencia -> incremento','sentencia',1,'p_sentencia','sintactico.py',67),
+  ('sentencia -> decremento','sentencia',1,'p_sentencia','sintactico.py',68),
+  ('incremento -> ID INCREMENT SEMICOLON','incremento',3,'p_incremento','sintactico.py',72),
+  ('decremento -> ID DECREMENT SEMICOLON','decremento',3,'p_decremento','sintactico.py',76),
+  ('asignacion -> ID EQ expresion SEMICOLON','asignacion',4,'p_asignacion','sintactico.py',80),
+  ('sent_expresion -> expresion SEMICOLON','sent_expresion',2,'p_sent_expresion','sintactico.py',84),
+  ('sent_expresion -> SEMICOLON','sent_expresion',1,'p_sent_expresion','sintactico.py',85),
+  ('seleccion -> IF expresion THEN lista_sentencias END','seleccion',5,'p_seleccion','sintactico.py',92),
+  ('seleccion -> IF expresion THEN lista_sentencias ELSE lista_sentencias END','seleccion',7,'p_seleccion','sintactico.py',93),
+  ('iteracion -> WHILE expresion lista_sentencias END','iteracion',4,'p_iteracion','sintactico.py',100),
+  ('repeticion -> DO lista_sentencias WHILE expresion SEMICOLON','repeticion',5,'p_repeticion','sintactico.py',104),
+  ('sent_in -> CIN INCREMENT ID SEMICOLON','sent_in',4,'p_sent_in','sintactico.py',108),
+  ('sent_out -> COUT DECREMENT salida SEMICOLON','sent_out',4,'p_sent_out','sintactico.py',112),
+  ('salida -> CADENA','salida',1,'p_salida','sintactico.py',116),
+  ('salida -> expresion','salida',1,'p_salida','sintactico.py',117),
+  ('salida -> CADENA DECREMENT expresion','salida',3,'p_salida','sintactico.py',118),
+  ('salida -> expresion DECREMENT CADENA','salida',3,'p_salida','sintactico.py',119),
+  ('expresion -> expresion_simple','expresion',1,'p_expresion','sintactico.py',126),
+  ('expresion -> expresion_simple rel_op expresion_simple','expresion',3,'p_expresion','sintactico.py',127),
+  ('rel_op -> LT','rel_op',1,'p_rel_op','sintactico.py',133),
+  ('rel_op -> LE','rel_op',1,'p_rel_op','sintactico.py',134),
+  ('rel_op -> GT','rel_op',1,'p_rel_op','sintactico.py',135),
+  ('rel_op -> GE','rel_op',1,'p_rel_op','sintactico.py',136),
+  ('rel_op -> EQ','rel_op',1,'p_rel_op','sintactico.py',137),
+  ('rel_op -> NE','rel_op',1,'p_rel_op','sintactico.py',138),
+  ('rel_op -> EEQ','rel_op',1,'p_rel_op','sintactico.py',139),
+  ('expresion_simple -> expresion_simple suma_op termino','expresion_simple',3,'p_expresion_simple','sintactico.py',143),
+  ('expresion_simple -> termino','expresion_simple',1,'p_expresion_simple','sintactico.py',144),
+  ('suma_op -> PLUS','suma_op',1,'p_suma_op','sintactico.py',151),
+  ('suma_op -> MINUS','suma_op',1,'p_suma_op','sintactico.py',152),
+  ('suma_op -> INCREMENT','suma_op',1,'p_suma_op','sintactico.py',153),
+  ('suma_op -> DECREMENT','suma_op',1,'p_suma_op','sintactico.py',154),
+  ('termino -> termino mult_op factor','termino',3,'p_termino','sintactico.py',158),
+  ('termino -> factor','termino',1,'p_termino','sintactico.py',159),
+  ('mult_op -> TIMES','mult_op',1,'p_mult_op','sintactico.py',166),
+  ('mult_op -> DIVIDE','mult_op',1,'p_mult_op','sintactico.py',167),
+  ('mult_op -> MODULO','mult_op',1,'p_mult_op','sintactico.py',168),
+  ('factor -> componente','factor',1,'p_factor','sintactico.py',172),
+  ('factor -> factor pot_op componente','factor',3,'p_factor','sintactico.py',173),
+  ('pot_op -> POWER','pot_op',1,'p_pot_op','sintactico.py',180),
+  ('componente -> LPAREN expresion RPAREN','componente',3,'p_componente','sintactico.py',184),
+  ('componente -> NUMBER','componente',1,'p_componente','sintactico.py',185),
+  ('componente -> REAL','componente',1,'p_componente','sintactico.py',186),
+  ('componente -> ID','componente',1,'p_componente','sintactico.py',187),
+  ('componente -> TRUE','componente',1,'p_componente','sintactico.py',188),
+  ('componente -> FALSE','componente',1,'p_componente','sintactico.py',189),
+  ('componente -> op_logico componente','componente',2,'p_componente','sintactico.py',190),
+  ('op_logico -> AND','op_logico',1,'p_op_logico','sintactico.py',199),
+  ('op_logico -> OR','op_logico',1,'p_op_logico','sintactico.py',200),
+  ('op_logico -> NOT','op_logico',1,'p_op_logico','sintactico.py',201),
+  ('expresion -> expresion AND expresion','expresion',3,'p_expresion_logica','sintactico.py',205),
+  ('expresion -> expresion OR expresion','expresion',3,'p_expresion_logica','sintactico.py',206),
+  ('expresion -> NOT expresion','expresion',2,'p_expresion_logica','sintactico.py',207),
+  ('empty -> <empty>','empty',0,'p_empty','sintactico.py',214),
 ]

@@ -38,9 +38,20 @@ def p_declaracion(p):
     '''declaracion : declaracion_variable 
                   | lista_sentencias'''
     p[0] = p[1]
+    
+def p_lista_identificadores(p):
+    '''lista_identificadores : ID
+                            | ID COMMA lista_identificadores'''
+    if len(p) == 2:
+        p[0] = ASTNode('identificador', value=p[1])
+    else:
+        p[0] = ASTNode('lista_identificadores', children=[
+            ASTNode('identificador', value=p[1]),
+            p[3]
+        ])
 
 def p_declaracion_variable(p):
-    '''declaracion_variable : tipo identificador SEMICOLON'''
+    '''declaracion_variable : tipo lista_identificadores SEMICOLON'''
     p[0] = ASTNode('declaracion_variable', children=[p[1], p[2]])
 
 def p_identificador(p):
@@ -310,37 +321,109 @@ def p_numero(p):
 
 def p_error(p):
     if p:
+        # Obtener información precisa de ubicación
+        line = find_line(p)
+        column = find_column(p)
+        
+        # Mensaje contextual más útil para falta de punto y coma
+        if p.type in ['FLOAT', 'INT'] and column > 1:
+            # Buscar el último token antes del error
+            prev_token = find_previous_token(p)
+            if prev_token and prev_token.type == 'ID':
+                # Si el token anterior era un ID, es muy probable que falte punto y coma
+                error_line = find_line(prev_token)
+                error_col = find_column(prev_token) + len(prev_token.value)
+                message = f"Falta ';' después de '{prev_token.value}'"
+                
+                error_msg = {
+                    'type': 'sintactico',
+                    'value': ';',
+                    'token_type': 'SEMICOLON',
+                    'line': error_line,
+                    'column': error_col,
+                    'message': message,
+                    'lexpos': prev_token.lexpos + len(prev_token.value)
+                }
+                
+                if not hasattr(parser, 'errors'):
+                    parser.errors = []
+                parser.errors.append(error_msg)
+                
+                # Recuperación: insertar un punto y coma ficticio
+                parser.errok()
+                return p  # Continuar con el token actual
+            else:
+                message = f"Token inesperado '{p.value}'"
+        else:
+            message = f"Token inesperado '{p.value}'"
+        
+        # Error genérico si no es caso de punto y coma faltante
         error_msg = {
             'type': 'sintactico',
             'value': p.value,
             'token_type': p.type,
-            'line': p.lineno,
-            'column': find_column(p),
-            'message': f"Token inesperado '{p.value}'"
+            'line': line,
+            'column': column,
+            'message': message,
+            'lexpos': p.lexpos
         }
-        
-        print(f"[ERROR] Línea {error_msg['line']}:{error_msg['column']} - {error_msg['message']}")
         
         if not hasattr(parser, 'errors'):
             parser.errors = []
         parser.errors.append(error_msg)
         
         # Recuperación: saltar hasta el siguiente punto seguro
-        parser.errok()
-        return parser.token()  # Leer siguiente token
+        while True:
+            tok = parser.token()
+            if not tok or tok.type in ['SEMICOLON', 'RBRACE', 'LBRACE']:
+                parser.errok()
+                return tok
     else:
         error_msg = {
             'type': 'sintactico',
-            'message': "Fin de archivo inesperado"
+            'message': "Fin de archivo inesperado",
+            'line': 1,
+            'column': 1
         }
-        print(f"[ERROR] {error_msg['message']}")
+        if not hasattr(parser, 'errors'):
+            parser.errors = []
         parser.errors.append(error_msg)
+
+def find_previous_token(p):
+    """Busca el token anterior no-espacio en el lexer"""
+    if not hasattr(p, 'lexer') or not hasattr(p.lexer, 'lexstat'):
+        return None
+    
+    # Obtener todos los tokens hasta ahora
+    tokens = []
+    while True:
+        tok = p.lexer.token()
+        if not tok:
+            break
+        tokens.append(tok)
+    
+    # Buscar el último token no-espacio antes de p
+    for tok in reversed(tokens):
+        if tok.type not in ['WS', 'NEWLINE']:
+            return tok
+    return None
+        
 def find_column(p):
+    if not hasattr(p, 'lexer') or not hasattr(p.lexer, 'lexdata'):
+        return 1
+    
     last_cr = p.lexer.lexdata.rfind('\n', 0, p.lexpos)
     if last_cr < 0:
-        last_cr = 0
+        last_cr = -1  # Comenzar desde 0 si no hay saltos de línea
     column = (p.lexpos - last_cr)
-    return column
+    return max(1, column)  # Asegurar que sea al menos 1
+
+def find_line(p):
+    if not hasattr(p, 'lexer') or not hasattr(p.lexer, 'lexdata'):
+        return 1
+
+    return p.lexer.lexdata.count('\n', 0, p.lexpos) + 1  # Contar líneas hasta la posición actual
+
 
 def read_tokens_from_file(file_path):
     """Lee tokens desde un archivo y los devuelve en formato para el parser"""
@@ -385,11 +468,9 @@ def parse_code(input_text):
             'success': len(parser.errors) == 0
         }
     except Exception as e:
-        error = f"Error fatal: {str(e)}"
-        print(error)
-        parser.errors.append(error)
-        return {
-            'ast': None,
-            'errors': parser.errors,
-            'success': False
+        error_msg = {
+            'type': 'fatal',
+            'message': str(e),
+            'line': 'desconocida',
+            'column': 'desconocida'
         }

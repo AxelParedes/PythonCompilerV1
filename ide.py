@@ -1029,6 +1029,8 @@ class IDE:
     def compile_sintactico(self):
         self.output_sintactico.config(state=tk.NORMAL)
         self.output_sintactico.delete(1.0, tk.END)
+        self.output_errores.config(state=tk.NORMAL)
+        self.output_errores.delete(1.0, tk.END)
         
         input_text = self.editor.get(1.0, tk.END)
         
@@ -1036,6 +1038,7 @@ class IDE:
             result = parse_code(input_text)
             
             self.output_sintactico.insert(tk.END, "=== ANÁLISIS SINTÁCTICO ===\n\n")
+            self.output_errores.insert(tk.END, "=== ERRORES SINTÁCTICOS ===\n", "error_header")
             
             if result['success'] and result['ast']:
                 self.output_sintactico.insert(tk.END, "El código es sintácticamente correcto.\n\n")
@@ -1047,18 +1050,63 @@ class IDE:
                     self.show_ast(result['ast'])
             else:
                 self.output_sintactico.insert(tk.END, "Se encontraron errores sintácticos:\n\n")
+                error_count = 0
+                
                 for error in result.get('errors', []):
-                    self.output_sintactico.insert(tk.END, f"- {error}\n")
+                    error_count += 1
+                    # Formatear el mensaje de error para ambos paneles
+                    error_msg = ""
+                    if 'line' in error and 'column' in error:
+                        error_msg = f"Error {error_count}: Línea {error['line']}, Columna {error['column']}: {error['message']}\n"
+                    else:
+                        error_msg = f"Error {error_count}: {error.get('message', str(error))}\n"
+                    
+                    self.output_sintactico.insert(tk.END, error_msg)
+                    self.output_errores.insert(tk.END, error_msg, "error_detail")
+                
+                if error_count > 0:
+                    self.output_errores.insert(tk.END, f"\nTotal de errores sintácticos: {error_count}\n", "error_header")
+                else:
+                    self.output_errores.insert(tk.END, "No se encontraron errores sintácticos.\n", "no_errors")
                 
                 if input_text.strip():
                     self._highlight_error_in_editor(result.get('errors', []), input_text)
                     
         except Exception as e:
-            self.output_sintactico.insert(tk.END, f"Error durante el análisis sintáctico: {str(e)}\n")
+            error_msg = f"Error durante el análisis sintáctico: {str(e)}\n"
+            self.output_sintactico.insert(tk.END, error_msg)
+            self.output_errores.insert(tk.END, error_msg, "error_detail")
             import traceback
-            traceback.print_exc()  # Esto imprimirá el traceback completo en la consola
+            traceback.print_exc()
         
         self.output_sintactico.config(state=tk.DISABLED)
+        self.output_errores.config(state=tk.DISABLED)
+    def _create_error_tooltip(self, position, message):
+        """Crea un tooltip para mostrar el mensaje de error"""
+        bbox = self.editor.bbox(position)
+        if not bbox:
+            return
+            
+        x, y, _, _ = bbox
+        root_x = self.editor.winfo_rootx() + x
+        root_y = self.editor.winfo_rooty() + y
+        
+        tooltip = tk.Toplevel(self.editor)
+        tooltip.wm_overrideredirect(True)
+        tooltip.wm_geometry(f"+{root_x}+{root_y}")
+        
+        label = tk.Label(
+            tooltip, 
+            text=message, 
+            background="#ffffe0", 
+            relief="solid", 
+            borderwidth=1,
+            font=("Consolas", 9)
+        )
+        label.pack()
+        
+        # Auto-destruir después de 5 segundos
+        tooltip.after(5000, tooltip.destroy)
 
     def _print_ast_structure(self, node, output_widget, level=0):
         """Muestra la estructura del AST en formato textual"""
@@ -1149,38 +1197,48 @@ class IDE:
    
 
     def _highlight_error_in_editor(self, errors, input_text=None):
-        """Resalta errores en el editor basado en los mensajes de error"""
+        """Resalta errores en el editor con ubicación precisa"""
         if input_text is None:
             input_text = self.editor.get("1.0", tk.END)
-        input_lines = input_text.split('\n')
-            
-        self.editor.tag_remove("ERROR", "1.0", tk.END)
-            
-        for error in errors:
-            if "línea" not in error or "columna" not in error:
-                continue
-                    
-            try:
-                    # Extraer información de ubicación
-                line_part = error.split("línea")[1].split(",")[0].strip()
-                line = int(line_part)
-                col_part = error.split("columna")[1].split(":")[0].strip()
-                col = int(col_part)
-                    
-                if 1 <= line <= len(input_lines):
-                    # Calcular posición en el editor
-                    start = f"{line}.{col-1}"
-                    end = f"{line}.{col}"
-                        
-                    # Aplicar resaltado
-                    self.editor.tag_add("ERROR", start, end)
-                    self.editor.see(start)
-            except (ValueError, IndexError):
-                continue
         
-    
+        input_lines = input_text.split('\n')
+        self.editor.tag_remove("ERROR", "1.0", tk.END)
+        
+        for error in errors:
+            try:
+                line = error.get('line', 1)
+                column = error.get('column', 1)
+                
+                # Ajustar para índices basados en 1 vs basados en 0
+                line = max(1, int(line))
+                column = max(1, int(column))
+                
+                # Verificar que la línea existe
+                if line > len(input_lines):
+                    continue
+                    
+                current_line = input_lines[line-1]
+                
+                # Ajustar columna si es mayor que la longitud de la línea
+                column = min(column, len(current_line)+1)
+                
+                # Para errores de punto y coma faltante, resaltar el final del token anterior
+                if error.get('token_type') == 'SEMICOLON' and error.get('value') == ';':
+                    start_pos = f"{line}.{column-1}"
+                    end_pos = f"{line}.{column}"
+                else:
+                    start_pos = f"{line}.{column-1}"
+                    end_pos = f"{line}.{column}"
+                
+                # Verificar que la posición es válida
+                if self.editor._is_valid_index(start_pos):
+                    self.editor.tag_add("ERROR", start_pos, end_pos)
+                    self.editor.see(start_pos)
+                    
+            except (ValueError, KeyError, tk.TclError) as e:
+                print(f"Error al resaltar: {str(e)}")
+                continue
 
-    
 
 if __name__ == "__main__":
     root = tk.Tk()

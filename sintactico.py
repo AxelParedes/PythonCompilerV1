@@ -100,8 +100,14 @@ def p_inc_dec_exp(p):
     ], lineno=p.lineno(1), lexpos=p.lexpos(1))
 
 def p_asignacion(p):
-    '''asignacion : ID EQ sent_expresion'''
-    p[0] = ASTNode('asignacion', children=[p[3]], value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    '''asignacion : ID EQ expresion SEMICOLON'''
+    p[0] = ASTNode('asignacion', 
+                  children=[
+                      ASTNode('identificador', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1)),
+                      p[3]
+                  ], 
+                  value=p[2],  # Esto captura el '='
+                  lineno=p.lineno(2), lexpos=p.lexpos(2))
 
 def p_sent_expresion(p):
     '''sent_expresion : expresion SEMICOLON'''
@@ -248,8 +254,9 @@ def p_componente(p):
                  | ID'''
     if len(p) == 4:
         p[0] = p[2]
-    else:
-        p[0] = ASTNode('componente', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    elif len(p) == 2:
+        # Para números e identificadores, usamos el nodo directamente
+        p[0] = p[1]
 
 def p_logico_op(p):
     '''logico_op : AND

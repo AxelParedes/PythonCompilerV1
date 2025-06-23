@@ -43,7 +43,7 @@ Rule 24    sentencia -> asignacion
 Rule 25    sentencia -> inc_dec_exp
 Rule 26    inc_dec_exp -> ID INCREMENT SEMICOLON
 Rule 27    inc_dec_exp -> ID DECREMENT SEMICOLON
-Rule 28    asignacion -> ID EQ sent_expresion
+Rule 28    asignacion -> ID EQ expresion SEMICOLON
 Rule 29    sent_expresion -> expresion SEMICOLON
 Rule 30    seleccion -> IF condicion THEN bloque_condicional
 Rule 31    seleccion -> IF condicion THEN bloque_condicional ELSE bloque_condicional
@@ -157,7 +157,7 @@ RBRACE               : 1 35 37 41 49
 REAL                 : 93 95
 RPAREN               : 41 67
 RSHIFT               : 
-SEMICOLON            : 8 26 27 29 52 53 54 55
+SEMICOLON            : 8 26 27 28 29 52 53 54 55
 STRING               : 
 SWITCH               : 
 THEN                 : 30 31
@@ -180,7 +180,7 @@ condicion            : 30 31
 declaracion          : 2 3
 declaracion_variable : 4
 empty                : 46 48
-expresion            : 29 32 41 42 43 44 45 47 54 55 55 60 62 67
+expresion            : 28 29 32 41 42 43 44 45 47 54 55 55 60 62 67
 expresion_condicion  : 
 expresion_logica     : 34 64 65
 expresion_relacional : 33 59 60 61 63 64 65 66
@@ -200,7 +200,7 @@ programa             : 0
 relacion_op          : 73
 repeticion           : 13 16 21
 seleccion            : 14 17 19
-sent_expresion       : 28
+sent_expresion       : 
 sent_in              : 22
 sent_out             : 23
 sentencia            : 15 18 36 38 50
@@ -265,7 +265,7 @@ state 3
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -324,7 +324,7 @@ state 4
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -404,7 +404,7 @@ state 7
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -589,7 +589,7 @@ state 14
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -799,7 +799,7 @@ state 22
 
 state 23
 
-    (28) asignacion -> ID . EQ sent_expresion
+    (28) asignacion -> ID . EQ expresion SEMICOLON
     (26) inc_dec_exp -> ID . INCREMENT SEMICOLON
     (27) inc_dec_exp -> ID . DECREMENT SEMICOLON
 
@@ -979,7 +979,7 @@ state 32
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -1032,7 +1032,7 @@ state 33
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -1558,8 +1558,7 @@ state 51
 
 state 52
 
-    (28) asignacion -> ID EQ . sent_expresion
-    (29) sent_expresion -> . expresion SEMICOLON
+    (28) asignacion -> ID EQ . expresion SEMICOLON
     (59) expresion -> . expresion_relacional
     (60) expresion -> . expresion logico_op expresion_relacional
     (72) expresion_relacional -> . expresion_simple
@@ -1587,8 +1586,7 @@ state 52
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    sent_expresion                 shift and go to state 87
-    expresion                      shift and go to state 88
+    expresion                      shift and go to state 87
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -1600,14 +1598,14 @@ state 53
 
     (26) inc_dec_exp -> ID INCREMENT . SEMICOLON
 
-    SEMICOLON       shift and go to state 89
+    SEMICOLON       shift and go to state 88
 
 
 state 54
 
     (27) inc_dec_exp -> ID DECREMENT . SEMICOLON
 
-    SEMICOLON       shift and go to state 90
+    SEMICOLON       shift and go to state 89
 
 
 state 55
@@ -1641,7 +1639,7 @@ state 55
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion                      shift and go to state 91
+    expresion                      shift and go to state 90
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -1672,13 +1670,13 @@ state 57
 
     ID              shift and go to state 31
 
-    lista_identificadores          shift and go to state 92
+    lista_identificadores          shift and go to state 91
 
 state 58
 
     (43) repeticion -> DO lista_sentencias bloque_while_opcional . UNTIL expresion
 
-    UNTIL           shift and go to state 93
+    UNTIL           shift and go to state 92
 
 
 state 59
@@ -1714,7 +1712,7 @@ state 59
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion                      shift and go to state 94
+    expresion                      shift and go to state 93
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -1753,11 +1751,11 @@ state 61
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    END             shift and go to state 95
+    END             shift and go to state 94
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -1802,7 +1800,7 @@ state 62
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion_relacional           shift and go to state 96
+    expresion_relacional           shift and go to state 95
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
     factor                         shift and go to state 39
@@ -1839,7 +1837,7 @@ state 65
     (70) logico_op -> . AND
     (71) logico_op -> . OR
 
-    RPAREN          shift and go to state 97
+    RPAREN          shift and go to state 96
     AND             shift and go to state 63
     OR              shift and go to state 64
 
@@ -1871,7 +1869,7 @@ state 66
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion_simple               shift and go to state 98
+    expresion_simple               shift and go to state 97
     termino                        shift and go to state 37
     factor                         shift and go to state 39
     componente                     shift and go to state 40
@@ -1900,7 +1898,7 @@ state 67
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    termino                        shift and go to state 99
+    termino                        shift and go to state 98
     factor                         shift and go to state 39
     componente                     shift and go to state 40
     numero                         shift and go to state 41
@@ -1928,7 +1926,7 @@ state 68
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    termino                        shift and go to state 100
+    termino                        shift and go to state 99
     factor                         shift and go to state 39
     componente                     shift and go to state 40
     numero                         shift and go to state 41
@@ -2018,7 +2016,7 @@ state 75
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    factor                         shift and go to state 101
+    factor                         shift and go to state 100
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
@@ -2041,7 +2039,7 @@ state 76
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    factor                         shift and go to state 102
+    factor                         shift and go to state 101
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
@@ -2064,7 +2062,7 @@ state 77
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    factor                         shift and go to state 103
+    factor                         shift and go to state 102
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
@@ -2157,7 +2155,7 @@ state 80
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    componente                     shift and go to state 104
+    componente                     shift and go to state 103
     numero                         shift and go to state 41
 
 state 81
@@ -2190,24 +2188,24 @@ state 81
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    LBRACE          shift and go to state 106
+    LBRACE          shift and go to state 105
     IF              shift and go to state 16
-    WHILE           shift and go to state 111
+    WHILE           shift and go to state 110
     DO              shift and go to state 14
     CIN             shift and go to state 22
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    bloque_condicional             shift and go to state 105
-    lista_sentencias               shift and go to state 107
-    sentencia                      shift and go to state 108
-    seleccion                      shift and go to state 109
+    bloque_condicional             shift and go to state 104
+    lista_sentencias               shift and go to state 106
+    sentencia                      shift and go to state 107
+    seleccion                      shift and go to state 108
     iteracion                      shift and go to state 17
-    repeticion                     shift and go to state 110
+    repeticion                     shift and go to state 109
     sent_in                        shift and go to state 18
     sent_out                       shift and go to state 19
     asignacion                     shift and go to state 20
@@ -2241,7 +2239,7 @@ state 82
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion_relacional           shift and go to state 112
+    expresion_relacional           shift and go to state 111
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
     factor                         shift and go to state 39
@@ -2276,7 +2274,7 @@ state 83
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion_relacional           shift and go to state 113
+    expresion_relacional           shift and go to state 112
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
     factor                         shift and go to state 39
@@ -2299,7 +2297,7 @@ state 85
     (70) logico_op -> . AND
     (71) logico_op -> . OR
 
-    RPAREN          shift and go to state 114
+    RPAREN          shift and go to state 113
     AND             shift and go to state 63
     OR              shift and go to state 64
 
@@ -2310,42 +2308,24 @@ state 86
     (52) sent_in -> CIN OP_IN ID . SEMICOLON
     (53) sent_in -> CIN OP_IN ID . OP_IN ID SEMICOLON
 
-    SEMICOLON       shift and go to state 116
-    OP_IN           shift and go to state 115
+    SEMICOLON       shift and go to state 115
+    OP_IN           shift and go to state 114
 
 
 state 87
 
-    (28) asignacion -> ID EQ sent_expresion .
-
-    DO              reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    WHILE           reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    IF              reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    CIN             reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    COUT            reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    ID              reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    RBRACE          reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    INT             reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    FLOAT           reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    UNTIL           reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    END             reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-    ELSE            reduce using rule 28 (asignacion -> ID EQ sent_expresion .)
-
-
-state 88
-
-    (29) sent_expresion -> expresion . SEMICOLON
+    (28) asignacion -> ID EQ expresion . SEMICOLON
     (60) expresion -> expresion . logico_op expresion_relacional
     (70) logico_op -> . AND
     (71) logico_op -> . OR
 
-    SEMICOLON       shift and go to state 117
+    SEMICOLON       shift and go to state 116
     AND             shift and go to state 63
     OR              shift and go to state 64
 
     logico_op                      shift and go to state 62
 
-state 89
+state 88
 
     (26) inc_dec_exp -> ID INCREMENT SEMICOLON .
 
@@ -2363,7 +2343,7 @@ state 89
     ELSE            reduce using rule 26 (inc_dec_exp -> ID INCREMENT SEMICOLON .)
 
 
-state 90
+state 89
 
     (27) inc_dec_exp -> ID DECREMENT SEMICOLON .
 
@@ -2381,7 +2361,7 @@ state 90
     ELSE            reduce using rule 27 (inc_dec_exp -> ID DECREMENT SEMICOLON .)
 
 
-state 91
+state 90
 
     (54) sent_out -> COUT OP_OUT expresion . SEMICOLON
     (55) sent_out -> COUT OP_OUT expresion . OP_OUT expresion SEMICOLON
@@ -2389,21 +2369,21 @@ state 91
     (70) logico_op -> . AND
     (71) logico_op -> . OR
 
-    SEMICOLON       shift and go to state 119
-    OP_OUT          shift and go to state 118
+    SEMICOLON       shift and go to state 118
+    OP_OUT          shift and go to state 117
     AND             shift and go to state 63
     OR              shift and go to state 64
 
     logico_op                      shift and go to state 62
 
-state 92
+state 91
 
     (7) lista_identificadores -> ID COMMA lista_identificadores .
 
     SEMICOLON       reduce using rule 7 (lista_identificadores -> ID COMMA lista_identificadores .)
 
 
-state 93
+state 92
 
     (43) repeticion -> DO lista_sentencias bloque_while_opcional UNTIL . expresion
     (59) expresion -> . expresion_relacional
@@ -2433,7 +2413,7 @@ state 93
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion                      shift and go to state 120
+    expresion                      shift and go to state 119
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -2441,7 +2421,7 @@ state 93
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
-state 94
+state 93
 
     (45) bloque_while_opcional -> WHILE expresion . lista_sentencias END
     (44) repeticion -> WHILE expresion . lista_sentencias END
@@ -2472,7 +2452,7 @@ state 94
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -2485,7 +2465,7 @@ state 94
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    lista_sentencias               shift and go to state 121
+    lista_sentencias               shift and go to state 120
     logico_op                      shift and go to state 62
     repeticion                     shift and go to state 9
     seleccion                      shift and go to state 10
@@ -2496,7 +2476,7 @@ state 94
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 95
+state 94
 
     (44) repeticion -> WHILE expresion lista_sentencias END .
     (42) iteracion -> WHILE expresion lista_sentencias END .
@@ -2537,7 +2517,7 @@ state 95
   ! END             [ reduce using rule 44 (repeticion -> WHILE expresion lista_sentencias END .) ]
 
 
-state 96
+state 95
 
     (60) expresion -> expresion logico_op expresion_relacional .
 
@@ -2561,12 +2541,12 @@ state 96
     ELSE            reduce using rule 60 (expresion -> expresion logico_op expresion_relacional .)
 
 
-state 97
+state 96
 
     (41) iteracion -> WHILE LPAREN expresion RPAREN . LBRACE lista_sentencias RBRACE
     (67) componente -> LPAREN expresion RPAREN .
 
-    LBRACE          shift and go to state 122
+    LBRACE          shift and go to state 121
     POWER           reduce using rule 67 (componente -> LPAREN expresion RPAREN .)
     TIMES           reduce using rule 67 (componente -> LPAREN expresion RPAREN .)
     DIVIDE          reduce using rule 67 (componente -> LPAREN expresion RPAREN .)
@@ -2589,7 +2569,7 @@ state 97
     ID              reduce using rule 67 (componente -> LPAREN expresion RPAREN .)
 
 
-state 98
+state 97
 
     (73) expresion_relacional -> expresion_simple relacion_op expresion_simple .
     (57) expresion_simple -> expresion_simple . PLUS termino
@@ -2617,7 +2597,7 @@ state 98
     MIN             shift and go to state 68
 
 
-state 99
+state 98
 
     (57) expresion_simple -> expresion_simple PLUS termino .
     (83) termino -> termino . TIMES factor
@@ -2655,7 +2635,7 @@ state 99
     MODULO          shift and go to state 77
 
 
-state 100
+state 99
 
     (58) expresion_simple -> expresion_simple MIN termino .
     (83) termino -> termino . TIMES factor
@@ -2693,7 +2673,7 @@ state 100
     MODULO          shift and go to state 77
 
 
-state 101
+state 100
 
     (83) termino -> termino TIMES factor .
 
@@ -2728,7 +2708,7 @@ state 101
     ELSE            reduce using rule 83 (termino -> termino TIMES factor .)
 
 
-state 102
+state 101
 
     (84) termino -> termino DIVIDE factor .
 
@@ -2763,7 +2743,7 @@ state 102
     ELSE            reduce using rule 84 (termino -> termino DIVIDE factor .)
 
 
-state 103
+state 102
 
     (85) termino -> termino MODULO factor .
 
@@ -2798,7 +2778,7 @@ state 103
     ELSE            reduce using rule 85 (termino -> termino MODULO factor .)
 
 
-state 104
+state 103
 
     (90) factor -> componente POWER componente .
 
@@ -2833,7 +2813,7 @@ state 104
     ELSE            reduce using rule 90 (factor -> componente POWER componente .)
 
 
-state 105
+state 104
 
     (30) seleccion -> IF condicion THEN bloque_condicional .
     (31) seleccion -> IF condicion THEN bloque_condicional . ELSE bloque_condicional
@@ -2850,12 +2830,12 @@ state 105
     FLOAT           reduce using rule 30 (seleccion -> IF condicion THEN bloque_condicional .)
     UNTIL           reduce using rule 30 (seleccion -> IF condicion THEN bloque_condicional .)
     END             reduce using rule 30 (seleccion -> IF condicion THEN bloque_condicional .)
-    ELSE            shift and go to state 123
+    ELSE            shift and go to state 122
 
   ! ELSE            [ reduce using rule 30 (seleccion -> IF condicion THEN bloque_condicional .) ]
 
 
-state 106
+state 105
 
     (37) bloque_condicional -> LBRACE . lista_sentencias RBRACE
     (13) lista_sentencias -> . lista_sentencias repeticion
@@ -2881,7 +2861,7 @@ state 106
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -2892,7 +2872,7 @@ state 106
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    lista_sentencias               shift and go to state 124
+    lista_sentencias               shift and go to state 123
     repeticion                     shift and go to state 9
     seleccion                      shift and go to state 10
     sentencia                      shift and go to state 11
@@ -2902,7 +2882,7 @@ state 106
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 107
+state 106
 
     (39) bloque_condicional -> lista_sentencias . END
     (13) lista_sentencias -> lista_sentencias . repeticion
@@ -2925,11 +2905,11 @@ state 107
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    END             shift and go to state 125
+    END             shift and go to state 124
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -2946,7 +2926,7 @@ state 107
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 108
+state 107
 
     (38) bloque_condicional -> sentencia .
     (18) lista_sentencias -> sentencia .
@@ -2980,7 +2960,7 @@ state 108
   ! END             [ reduce using rule 38 (bloque_condicional -> sentencia .) ]
 
 
-state 109
+state 108
 
     (19) sentencia -> seleccion .
     (17) lista_sentencias -> seleccion .
@@ -3014,7 +2994,7 @@ state 109
   ! END             [ reduce using rule 19 (sentencia -> seleccion .) ]
 
 
-state 110
+state 109
 
     (21) sentencia -> repeticion .
     (16) lista_sentencias -> repeticion .
@@ -3048,7 +3028,7 @@ state 110
   ! END             [ reduce using rule 21 (sentencia -> repeticion .) ]
 
 
-state 111
+state 110
 
     (41) iteracion -> WHILE . LPAREN expresion RPAREN LBRACE lista_sentencias RBRACE
     (42) iteracion -> WHILE . expresion lista_sentencias END
@@ -3080,7 +3060,7 @@ state 111
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion                      shift and go to state 126
+    expresion                      shift and go to state 125
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -3088,7 +3068,7 @@ state 111
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
-state 112
+state 111
 
     (64) expresion_logica -> expresion_logica AND expresion_relacional .
 
@@ -3097,7 +3077,7 @@ state 112
     THEN            reduce using rule 64 (expresion_logica -> expresion_logica AND expresion_relacional .)
 
 
-state 113
+state 112
 
     (65) expresion_logica -> expresion_logica OR expresion_relacional .
 
@@ -3106,7 +3086,7 @@ state 113
     THEN            reduce using rule 65 (expresion_logica -> expresion_logica OR expresion_relacional .)
 
 
-state 114
+state 113
 
     (67) componente -> LPAREN expresion RPAREN .
 
@@ -3142,14 +3122,14 @@ state 114
     ELSE            reduce using rule 67 (componente -> LPAREN expresion RPAREN .)
 
 
-state 115
+state 114
 
     (53) sent_in -> CIN OP_IN ID OP_IN . ID SEMICOLON
 
-    ID              shift and go to state 127
+    ID              shift and go to state 126
 
 
-state 116
+state 115
 
     (52) sent_in -> CIN OP_IN ID SEMICOLON .
 
@@ -3167,25 +3147,25 @@ state 116
     ELSE            reduce using rule 52 (sent_in -> CIN OP_IN ID SEMICOLON .)
 
 
+state 116
+
+    (28) asignacion -> ID EQ expresion SEMICOLON .
+
+    DO              reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    WHILE           reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    IF              reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    CIN             reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    COUT            reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    ID              reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    RBRACE          reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    INT             reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    FLOAT           reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    UNTIL           reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    END             reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+    ELSE            reduce using rule 28 (asignacion -> ID EQ expresion SEMICOLON .)
+
+
 state 117
-
-    (29) sent_expresion -> expresion SEMICOLON .
-
-    DO              reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    WHILE           reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    IF              reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    CIN             reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    COUT            reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    ID              reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    RBRACE          reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    INT             reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    FLOAT           reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    UNTIL           reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    END             reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-    ELSE            reduce using rule 29 (sent_expresion -> expresion SEMICOLON .)
-
-
-state 118
 
     (55) sent_out -> COUT OP_OUT expresion OP_OUT . expresion SEMICOLON
     (59) expresion -> . expresion_relacional
@@ -3215,7 +3195,7 @@ state 118
     REAL            shift and go to state 44
     MIN             shift and go to state 38
 
-    expresion                      shift and go to state 128
+    expresion                      shift and go to state 127
     expresion_relacional           shift and go to state 35
     expresion_simple               shift and go to state 36
     termino                        shift and go to state 37
@@ -3223,7 +3203,7 @@ state 118
     componente                     shift and go to state 40
     numero                         shift and go to state 41
 
-state 119
+state 118
 
     (54) sent_out -> COUT OP_OUT expresion SEMICOLON .
 
@@ -3241,7 +3221,7 @@ state 119
     ELSE            reduce using rule 54 (sent_out -> COUT OP_OUT expresion SEMICOLON .)
 
 
-state 120
+state 119
 
     (43) repeticion -> DO lista_sentencias bloque_while_opcional UNTIL expresion .
     (60) expresion -> expresion . logico_op expresion_relacional
@@ -3265,7 +3245,7 @@ state 120
 
     logico_op                      shift and go to state 62
 
-state 121
+state 120
 
     (45) bloque_while_opcional -> WHILE expresion lista_sentencias . END
     (44) repeticion -> WHILE expresion lista_sentencias . END
@@ -3290,11 +3270,11 @@ state 121
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    END             shift and go to state 129
+    END             shift and go to state 128
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -3311,7 +3291,7 @@ state 121
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 122
+state 121
 
     (41) iteracion -> WHILE LPAREN expresion RPAREN LBRACE . lista_sentencias RBRACE
     (13) lista_sentencias -> . lista_sentencias repeticion
@@ -3337,7 +3317,7 @@ state 122
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -3348,7 +3328,7 @@ state 122
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    lista_sentencias               shift and go to state 130
+    lista_sentencias               shift and go to state 129
     repeticion                     shift and go to state 9
     seleccion                      shift and go to state 10
     sentencia                      shift and go to state 11
@@ -3358,7 +3338,7 @@ state 122
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 123
+state 122
 
     (31) seleccion -> IF condicion THEN bloque_condicional ELSE . bloque_condicional
     (37) bloque_condicional -> . LBRACE lista_sentencias RBRACE
@@ -3387,30 +3367,30 @@ state 123
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    LBRACE          shift and go to state 106
+    LBRACE          shift and go to state 105
     IF              shift and go to state 16
-    WHILE           shift and go to state 111
+    WHILE           shift and go to state 110
     DO              shift and go to state 14
     CIN             shift and go to state 22
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    bloque_condicional             shift and go to state 131
-    lista_sentencias               shift and go to state 107
-    sentencia                      shift and go to state 108
-    seleccion                      shift and go to state 109
+    bloque_condicional             shift and go to state 130
+    lista_sentencias               shift and go to state 106
+    sentencia                      shift and go to state 107
+    seleccion                      shift and go to state 108
     iteracion                      shift and go to state 17
-    repeticion                     shift and go to state 110
+    repeticion                     shift and go to state 109
     sent_in                        shift and go to state 18
     sent_out                       shift and go to state 19
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 124
+state 123
 
     (37) bloque_condicional -> LBRACE lista_sentencias . RBRACE
     (13) lista_sentencias -> lista_sentencias . repeticion
@@ -3433,11 +3413,11 @@ state 124
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    RBRACE          shift and go to state 132
+    RBRACE          shift and go to state 131
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -3454,7 +3434,7 @@ state 124
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 125
+state 124
 
     (39) bloque_condicional -> lista_sentencias END .
 
@@ -3472,7 +3452,7 @@ state 125
     END             reduce using rule 39 (bloque_condicional -> lista_sentencias END .)
 
 
-state 126
+state 125
 
     (42) iteracion -> WHILE expresion . lista_sentencias END
     (44) repeticion -> WHILE expresion . lista_sentencias END
@@ -3502,7 +3482,7 @@ state 126
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
@@ -3515,7 +3495,7 @@ state 126
     COUT            shift and go to state 24
     ID              shift and go to state 23
 
-    lista_sentencias               shift and go to state 133
+    lista_sentencias               shift and go to state 132
     logico_op                      shift and go to state 62
     repeticion                     shift and go to state 9
     seleccion                      shift and go to state 10
@@ -3526,27 +3506,27 @@ state 126
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 127
+state 126
 
     (53) sent_in -> CIN OP_IN ID OP_IN ID . SEMICOLON
 
-    SEMICOLON       shift and go to state 134
+    SEMICOLON       shift and go to state 133
 
 
-state 128
+state 127
 
     (55) sent_out -> COUT OP_OUT expresion OP_OUT expresion . SEMICOLON
     (60) expresion -> expresion . logico_op expresion_relacional
     (70) logico_op -> . AND
     (71) logico_op -> . OR
 
-    SEMICOLON       shift and go to state 135
+    SEMICOLON       shift and go to state 134
     AND             shift and go to state 63
     OR              shift and go to state 64
 
     logico_op                      shift and go to state 62
 
-state 129
+state 128
 
     (45) bloque_while_opcional -> WHILE expresion lista_sentencias END .
     (44) repeticion -> WHILE expresion lista_sentencias END .
@@ -3578,7 +3558,7 @@ state 129
   ! UNTIL           [ reduce using rule 44 (repeticion -> WHILE expresion lista_sentencias END .) ]
 
 
-state 130
+state 129
 
     (41) iteracion -> WHILE LPAREN expresion RPAREN LBRACE lista_sentencias . RBRACE
     (13) lista_sentencias -> lista_sentencias . repeticion
@@ -3601,11 +3581,11 @@ state 130
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    RBRACE          shift and go to state 136
+    RBRACE          shift and go to state 135
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -3622,7 +3602,7 @@ state 130
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 131
+state 130
 
     (31) seleccion -> IF condicion THEN bloque_condicional ELSE bloque_condicional .
 
@@ -3640,7 +3620,7 @@ state 131
     ELSE            reduce using rule 31 (seleccion -> IF condicion THEN bloque_condicional ELSE bloque_condicional .)
 
 
-state 132
+state 131
 
     (37) bloque_condicional -> LBRACE lista_sentencias RBRACE .
 
@@ -3658,7 +3638,7 @@ state 132
     END             reduce using rule 37 (bloque_condicional -> LBRACE lista_sentencias RBRACE .)
 
 
-state 133
+state 132
 
     (42) iteracion -> WHILE expresion lista_sentencias . END
     (44) repeticion -> WHILE expresion lista_sentencias . END
@@ -3682,11 +3662,11 @@ state 133
     (53) sent_in -> . CIN OP_IN ID OP_IN ID SEMICOLON
     (54) sent_out -> . COUT OP_OUT expresion SEMICOLON
     (55) sent_out -> . COUT OP_OUT expresion OP_OUT expresion SEMICOLON
-    (28) asignacion -> . ID EQ sent_expresion
+    (28) asignacion -> . ID EQ expresion SEMICOLON
     (26) inc_dec_exp -> . ID INCREMENT SEMICOLON
     (27) inc_dec_exp -> . ID DECREMENT SEMICOLON
 
-    END             shift and go to state 137
+    END             shift and go to state 136
     DO              shift and go to state 14
     WHILE           shift and go to state 15
     IF              shift and go to state 16
@@ -3703,7 +3683,7 @@ state 133
     asignacion                     shift and go to state 20
     inc_dec_exp                    shift and go to state 21
 
-state 134
+state 133
 
     (53) sent_in -> CIN OP_IN ID OP_IN ID SEMICOLON .
 
@@ -3721,7 +3701,7 @@ state 134
     ELSE            reduce using rule 53 (sent_in -> CIN OP_IN ID OP_IN ID SEMICOLON .)
 
 
-state 135
+state 134
 
     (55) sent_out -> COUT OP_OUT expresion OP_OUT expresion SEMICOLON .
 
@@ -3739,7 +3719,7 @@ state 135
     ELSE            reduce using rule 55 (sent_out -> COUT OP_OUT expresion OP_OUT expresion SEMICOLON .)
 
 
-state 136
+state 135
 
     (41) iteracion -> WHILE LPAREN expresion RPAREN LBRACE lista_sentencias RBRACE .
 
@@ -3757,7 +3737,7 @@ state 136
     ELSE            reduce using rule 41 (iteracion -> WHILE LPAREN expresion RPAREN LBRACE lista_sentencias RBRACE .)
 
 
-state 137
+state 136
 
     (42) iteracion -> WHILE expresion lista_sentencias END .
     (44) repeticion -> WHILE expresion lista_sentencias END .
@@ -3809,7 +3789,7 @@ WARNING: shift/reduce conflict for IF in state 7 resolved as shift
 WARNING: shift/reduce conflict for CIN in state 7 resolved as shift
 WARNING: shift/reduce conflict for COUT in state 7 resolved as shift
 WARNING: shift/reduce conflict for ID in state 7 resolved as shift
-WARNING: shift/reduce conflict for ELSE in state 105 resolved as shift
+WARNING: shift/reduce conflict for ELSE in state 104 resolved as shift
 WARNING: reduce/reduce conflict in state 9 resolved using rule (lista_sentencias -> repeticion)
 WARNING: rejected rule (sentencia -> repeticion) in state 9
 WARNING: reduce/reduce conflict in state 10 resolved using rule (lista_sentencias -> seleccion)
@@ -3824,20 +3804,20 @@ WARNING: reduce/reduce conflict in state 47 resolved using rule (expresion -> ex
 WARNING: rejected rule (expresion_logica -> expresion_relacional) in state 47
 WARNING: reduce/reduce conflict in state 47 resolved using rule (condicion -> expresion_relacional)
 WARNING: rejected rule (expresion_logica -> expresion_relacional) in state 47
-WARNING: reduce/reduce conflict in state 95 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
-WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 95
-WARNING: reduce/reduce conflict in state 108 resolved using rule (lista_sentencias -> sentencia)
-WARNING: rejected rule (bloque_condicional -> sentencia) in state 108
-WARNING: reduce/reduce conflict in state 109 resolved using rule (lista_sentencias -> seleccion)
-WARNING: rejected rule (sentencia -> seleccion) in state 109
-WARNING: reduce/reduce conflict in state 110 resolved using rule (lista_sentencias -> repeticion)
-WARNING: rejected rule (sentencia -> repeticion) in state 110
-WARNING: reduce/reduce conflict in state 129 resolved using rule (repeticion -> WHILE expresion lista_sentencias END)
-WARNING: rejected rule (bloque_while_opcional -> WHILE expresion lista_sentencias END) in state 129
-WARNING: reduce/reduce conflict in state 129 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
-WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 129
-WARNING: reduce/reduce conflict in state 137 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
-WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 137
+WARNING: reduce/reduce conflict in state 94 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
+WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 94
+WARNING: reduce/reduce conflict in state 107 resolved using rule (lista_sentencias -> sentencia)
+WARNING: rejected rule (bloque_condicional -> sentencia) in state 107
+WARNING: reduce/reduce conflict in state 108 resolved using rule (lista_sentencias -> seleccion)
+WARNING: rejected rule (sentencia -> seleccion) in state 108
+WARNING: reduce/reduce conflict in state 109 resolved using rule (lista_sentencias -> repeticion)
+WARNING: rejected rule (sentencia -> repeticion) in state 109
+WARNING: reduce/reduce conflict in state 128 resolved using rule (repeticion -> WHILE expresion lista_sentencias END)
+WARNING: rejected rule (bloque_while_opcional -> WHILE expresion lista_sentencias END) in state 128
+WARNING: reduce/reduce conflict in state 128 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
+WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 128
+WARNING: reduce/reduce conflict in state 136 resolved using rule (iteracion -> WHILE expresion lista_sentencias END)
+WARNING: rejected rule (repeticion -> WHILE expresion lista_sentencias END) in state 136
 WARNING: Rule (expresion_logica -> expresion_relacional) is never reduced
 WARNING: Rule (repeticion -> WHILE expresion lista_sentencias END) is never reduced
 WARNING: Rule (bloque_while_opcional -> WHILE expresion lista_sentencias END) is never reduced

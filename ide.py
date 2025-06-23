@@ -1110,8 +1110,7 @@ class IDE:
         NODOS_OMITIR = {
             'lista_declaracion',
             'lista_identificadores', 
-            'declaracion_variable',
-            'lista_sentencias'
+            'lista_sentencias',
         }
 
         # Obtener el texto completo del editor para cálculo preciso de columnas
@@ -1124,13 +1123,19 @@ class IDE:
                 return ''
             
             try:
+                # Obtener el texto completo
+                input_text = self.editor.get("1.0", tk.END)
+                lines = input_text.split('\n')
+                
                 # Asegurarnos que la línea existe
-                if 0 <= lineno-1 < len(lines):
+                if 1 <= lineno <= len(lines):
+                    # Calcular la posición de inicio de la línea
                     line_start_pos = 0
-                    for i in range(lineno-1):
+                    for i in range(lineno - 1):
                         line_start_pos += len(lines[i]) + 1  # +1 por el \n
                     
-                    column = lexpos - line_start_pos + 1  # +1 para base 1
+                    # Calcular columna (1-based)
+                    column = lexpos - line_start_pos + 1
                     return max(1, column)  # Asegurar que sea al menos 1
             except Exception as e:
                 print(f"Error calculando columna: {e}")
@@ -1148,10 +1153,10 @@ class IDE:
                 return
 
             # Columna "Nodo"
-            node_display = node.type
+            node_text = node.type
             value = getattr(node, 'value', None)
             if value is not None:
-                node_display = f"{node.type} ({value})"
+                node_text += f" ({value})"
                 
 
 
@@ -1168,7 +1173,7 @@ class IDE:
 
             item = self.token_tree_sintactico.insert(
                 parent, "end",
-                values=(node_display, node.type, line, column)
+                values=(node_text, node.type, line, column)
             )
 
             if hasattr(node, 'children'):
@@ -1266,7 +1271,11 @@ class IDE:
 
     def _build_ast_tree(self, treeview, parent, node):
         """Construye recursivamente el árbol visual"""
-        node_text = f"{node.type}"
+        if not isinstance(node, ASTNode):
+            return
+        # Obtener información del nodo
+        node_text = node.type
+        
         
         # Solo añadir valor si existe
         if hasattr(node, 'value') and node.value is not None:

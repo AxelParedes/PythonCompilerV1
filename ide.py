@@ -3,8 +3,6 @@ from tkinter import ttk, filedialog, messagebox
 from sintactico import ASTNode, parse_code
 from lexico import test_lexer
 from sintactico import parse_code
-from semantico import test_semantics
-from codigo_intermedio import test_intermediate_code
 from tkinter import PhotoImage
 from pygments import lex
 from pygments.lexers import get_lexer_by_name
@@ -420,9 +418,7 @@ class IDE:
         compilemenu = tk.Menu(menubar, tearoff=0)
         compilemenu.add_command(label="Compilar Léxico", command=self.compile_lexico)
         compilemenu.add_command(label="Compilar Sintáctico", command=self.compile_sintactico)
-        compilemenu.add_command(label="Compilar Semántico", command=self.compile_semantico)
-        compilemenu.add_command(label="Generar Intermedio", command=self.compile_intermedio)
-        compilemenu.add_command(label="Ejecutar", command=self.compile_ejecucion)
+       
         menubar.add_cascade(label="Compilar", menu=compilemenu)
 
         self.root.config(menu=menubar)
@@ -517,19 +513,6 @@ class IDE:
         btn_sintactico = tk.Button(toolbar, text="Compilar Sintáctico", command=self.compile_sintactico)
         btn_sintactico.pack(side=tk.LEFT, padx=2, pady=2)
         self.add_tooltip(btn_sintactico, "Compilar Sintáctico")
-
-        btn_semantico = tk.Button(toolbar, text="Compilar Semántico", command=self.compile_semantico)
-        btn_semantico.pack(side=tk.LEFT, padx=2, pady=2)
-        self.add_tooltip(btn_semantico, "Compilar Semántico")
-
-        btn_intermedio = tk.Button(toolbar, text="Generar Intermedio", command=self.compile_intermedio)
-        btn_intermedio.pack(side=tk.LEFT, padx=2, pady=2)
-        self.add_tooltip(btn_intermedio, "Generar Código Intermedio")
-
-        btn_ejecucion = tk.Button(toolbar, text="Ejecutar", command=self.compile_ejecucion)
-        btn_ejecucion.pack(side=tk.LEFT, padx=2, pady=2)
-        self.add_tooltip(btn_ejecucion, "Ejecutar")
-        
 
     def add_tooltip(self, widget, text):
         '''Agrega un tooltip (hover) a un widget'''
@@ -1044,193 +1027,54 @@ class IDE:
 
     
     def compile_sintactico(self):
-        
         self.output_sintactico.config(state=tk.NORMAL)
         self.output_sintactico.delete(1.0, tk.END)
-        self.output_errores.config(state=tk.NORMAL)
-        self.output_errores.delete(1.0, tk.END)
         
         input_text = self.editor.get(1.0, tk.END)
         
         try:
             result = parse_code(input_text)
             
-            # Mostrar resultados
-            if result.get('ast'):
+            self.output_sintactico.insert(tk.END, "=== ANÁLISIS SINTÁCTICO ===\n\n")
+            
+            if result['success'] and result['ast']:
+                self.output_sintactico.insert(tk.END, "El código es sintácticamente correcto.\n\n")
+                self.output_sintactico.insert(tk.END, "=== ESTRUCTURA DEL ÁRBOL SINTÁCTICO ===\n\n")
                 self._print_ast_structure(result['ast'], self.output_sintactico)
-                self.show_ast(result['ast'])
-            
-            # Mostrar errores si existen
-            if result.get('errors'):
-                self.output_errores.insert(tk.END, "=== ERRORES SINTÁCTICOS ===\n", "error_header")
-                for error in result['errors']:
-                    self.output_errores.insert(tk.END, error + "\n", "error_detail")
-                self._highlight_error_in_editor(result['errors'], input_text)
-            else:
-                self.output_errores.insert(tk.END, "Análisis completado sin errores\n", "no_errors")
                 
-        except Exception as e:
-            error_msg = f"Error durante análisis: {str(e)}\n"
-            self.output_errores.insert(tk.END, error_msg, "error_detail")
-            print(f"Error detallado: {e}")  # Para depuración
-        
-        self.output_sintactico.config(state=tk.DISABLED)
-        self.output_errores.config(state=tk.DISABLED)
-    
-    def print_ast(node, level=0):
-        """Genera la representación visual del AST"""
-        indent = "    " * level
-        result = []
-        
-        if isinstance(node, ASTNode):
-            # Nodo raíz
-            if node.type == 'programa':
-                result.append(f"{indent}Raíz: programa")
-                for child in node.children:
-                    result.extend(print_ast(child, level+1))
-            
-            # Tipos de variables
-            elif node.type == 'declaracion_variable':
-                result.append(f"{indent}- {node.children[0].value}")
-                for var in node.children[1:]:
-                    if hasattr(var, 'value'):
-                        result.append(f"{indent}    - {var.value}")
-            
-            # Estructuras de control
-            elif node.type == 'if-then':
-                result.append(f"{indent}- if-then")
-                result.extend(print_ast(node.children[0], level+1))  # Condición
-                result.extend(print_ast(node.children[1], level+1))  # Cuerpo then
-            
-            elif node.type == 'do-until':
-                result.append(f"{indent}- do-until")
-                result.extend(print_ast(node.children[0], level+1))  # Cuerpo
-                result.extend(print_ast(node.children[1], level+1))  # Condición
-        
-        return result
-    def generate_ast_view(self, node, level=0):
-        """Genera la vista del AST con formato exacto"""
-        indent = "    " * level
-        result = ""
-        
-        if isinstance(node, dict):
-            # Nodo raíz
-            if node['type'] == 'programa':
-                result += f"{indent}Raíz: programa\n"
-                for child in node['body']:
-                    result += self.generate_ast_view(child, level+1)
-            
-            # Declaraciones de variables
-            elif node['type'] == 'declaration':
-                result += f"{indent}- {node['var_type']}\n"
-                for var in node['variables']:
-                    result += f"{indent}    - {var}\n"
-            
-            # Estructuras de control
-            elif node['type'] in ('if-then', 'if-then-else'):
-                result += f"{indent}- {node['type']}\n"
-                result += self.generate_ast_view(node['condition'], level+1)
-                result += self.generate_ast_view(node['then_body'], level+1)
-                if 'else_body' in node:
-                    result += self.generate_ast_view(node['else_body'], level+1)
-            
-            # Bucles
-            elif node['type'] in ('do-while', 'do-until'):
-                result += f"{indent}- {node['type']}\n"
-                result += self.generate_ast_view(node['body'], level+1)
-                result += self.generate_ast_view(node['condition'], level+1)
-            
-            # Asignaciones
-            elif node['type'] == 'asignacion':
-                result += f"{indent}- =\n"
-                result += f"{indent}    - {node['left']}\n"
-                result += self.generate_ast_view(node['right'], level+2)
-        
-        elif isinstance(node, list):
-            for item in node:
-                result += self.generate_ast_view(item, level)
-        
-        elif isinstance(node, str):
-            result += f"{indent}- {node}\n"
-        
-        return result
-    
-    def show_ast(self, ast_data):
-        """Muestra el AST con formato y colores"""
-        self.output_sintactico.config(state=tk.NORMAL)
-        self.output_sintactico.delete(1.0, tk.END)
-        ast_text = self
-    
-    def show_ast_in_panel(self, ast_root):
-        """Muestra el AST en el panel de salida"""
-        self.output_sintactico.config(state=tk.NORMAL)
-        self.output_sintactico.delete(1.0, tk.END)
-        
-        ast_lines = print_ast(ast_root)
-        for line in ast_lines:
-            if "Raíz:" in line:
-                self.output_sintactico.insert(tk.END, line + "\n", "ast_root")
-            elif "- if-then" in line or "- do-until" in line:
-                self.output_sintactico.insert(tk.END, line + "\n", "ast_control")
-            elif any(t in line for t in ['- int', '- float', '- bool']):
-                self.output_sintactico.insert(tk.END, line + "\n", "ast_type")
+                # Mostrar el árbol visual solo si hay un AST válido
+                if result['ast']:
+                    self.show_ast(result['ast'])
             else:
-                self.output_sintactico.insert(tk.END, line + "\n", "ast_default")
+                self.output_sintactico.insert(tk.END, "Se encontraron errores sintácticos:\n\n")
+                for error in result.get('errors', []):
+                    self.output_sintactico.insert(tk.END, f"- {error}\n")
+                
+                if input_text.strip():
+                    self._highlight_error_in_editor(result.get('errors', []), input_text)
+                    
+        except Exception as e:
+            self.output_sintactico.insert(tk.END, f"Error durante el análisis sintáctico: {str(e)}\n")
+            import traceback
+            traceback.print_exc()  # Esto imprimirá el traceback completo en la consola
         
         self.output_sintactico.config(state=tk.DISABLED)
 
-    def setup_ast_tags(self):
-        """Configura los estilos para el AST"""
-        self.output_sintactico.tag_config("ast_root", foreground='#0047AB', font=('Consolas', 10, 'bold'))
-        self.output_sintactico.tag_config("ast_type", foreground='#228B22', font=('Consolas', 10))
-        self.output_sintactico.tag_config("ast_assign", foreground='#8B0000', font=('Consolas', 10))
-        self.output_sintactico.tag_config("ast_default", font=('Consolas', 10))
-            
-
-        def _highlight_error_in_editor(self, errors, input_text=None):
-            """Resalta errores en el editor basado en los mensajes de error"""
-            if input_text is None:
-                input_text = self.editor.get("1.0", tk.END)
-            input_lines = input_text.split('\n')
-            
-            self.editor.tag_remove("ERROR", "1.0", tk.END)
-            
-            for error in errors:
-                if "línea" not in error or "columna" not in error:
-                    continue
-                    
-                try:
-                    # Extraer información de ubicación
-                    line_part = error.split("línea")[1].split(",")[0].strip()
-                    line = int(line_part)
-                    col_part = error.split("columna")[1].split(":")[0].strip()
-                    col = int(col_part)
-                    
-                    if 1 <= line <= len(input_lines):
-                        # Calcular posición en el editor
-                        start = f"{line}.{col-1}"
-                        end = f"{line}.{col}"
-                        
-                        # Aplicar resaltado
-                        self.editor.tag_add("ERROR", start, end)
-                        self.editor.see(start)
-                except (ValueError, IndexError):
-                    continue
-        
     def _print_ast_structure(self, node, output_widget, level=0):
-        """Muestra una representación textual del AST"""
+        """Muestra la estructura del AST en formato textual"""
         indent = "  " * level
         node_text = f"{indent}- {node.type}"
         
-        if node.value:
+        # Solo mostrar valor si existe
+        if hasattr(node, 'value') and node.value is not None:
             node_text += f" (valor: {node.value})"
-        if node.op:
-            node_text += f" [operador: {node.op}]"
         
         output_widget.insert(tk.END, node_text + "\n")
         
-        for child in node.children:
-            self._print_ast_structure(child, output_widget, level + 1)
+        # Recorrer hijos si existen
+        if hasattr(node, 'children'):
+            for child in node.children:
+                self._print_ast_structure(child, output_widget, level + 1)
 
     def show_ast(self, ast_root):
         """Muestra una ventana con el árbol sintáctico visual"""
@@ -1254,7 +1098,7 @@ class IDE:
         # Construir el árbol visual
         self._build_ast_tree(tree, "", ast_root)
         
-        # Botón para expandir/contraer todo
+        # Botones de control
         btn_frame = tk.Frame(ast_window)
         btn_frame.pack(fill=tk.X, padx=5, pady=5)
         
@@ -1268,18 +1112,22 @@ class IDE:
     def _build_ast_tree(self, treeview, parent, node):
         """Construye recursivamente el árbol visual"""
         node_text = f"{node.type}"
-        if node.value:
-            node_text += f" (valor: {node.value})"
-        if node.op:
-            node_text += f" [operador: {node.op}]"
         
-        if node.lineno:
+        # Solo añadir valor si existe
+        if hasattr(node, 'value') and node.value is not None:
+            node_text += f": {node.value}"
+        
+        # Solo añadir información de línea si existe
+        if hasattr(node, 'lineno') and node.lineno is not None:
             node_text += f" [Línea: {node.lineno}]"
         
         node_id = treeview.insert(parent, "end", text=node_text)
         
-        for child in node.children:
-            self._build_ast_tree(treeview, node_id, child)
+        # Recorrer hijos si existen
+        if hasattr(node, 'children'):
+            for child in node.children:
+                self._build_ast_tree(treeview, node_id, child)
+
 
     def _expand_tree(self, tree, item):
         """Expande todos los nodos del árbol"""
@@ -1288,6 +1136,7 @@ class IDE:
             self._expand_tree(tree, child)
         tree.item(item, open=True)
 
+
     def _collapse_tree(self, tree, item):
         """Contrae todos los nodos del árbol"""
         children = tree.get_children(item)
@@ -1295,30 +1144,43 @@ class IDE:
             self._collapse_tree(tree, child)
         tree.item(item, open=False)
 
-    def compile_semantico(self):
-        self.output_semantico.delete(1.0, tk.END)
-        self.output_errores.delete(1.0, tk.END)
-        input_text = self.editor.get(1.0, tk.END)
-        errors = test_semantics(input_text)
-        for error in errors:
-            self.output_semantico.insert(tk.END, f"{error}\n")
-            self.output_errores.insert(tk.END, f"Error semántico: {error}\n")
-                
-    def compile_intermedio(self):
-        self.output_intermedio.delete(1.0, tk.END)
-        input_text = self.editor.get(1.0, tk.END)
-        ast = test_intermediate_code(input_text)
-        self.output_intermedio.insert(tk.END, f"Código intermedio generado: {ast}\n")
-        
-    def compile_hash(self):
-        self.output_hash.delete(1.0, tk.END)
-        input_text = self.editor.get(1.0, tk.END)
-        self.output_hash.insert(tk.END, "Hash generado.\n")
+   
 
-    def compile_ejecucion(self):
-        self.output_ejecucion.delete(1.0, tk.END)
-        input_text = self.editor.get(1.0, tk.END)
-        self.output_ejecucion.insert(tk.END, "Ejecución completada.\n")
+   
+
+    def _highlight_error_in_editor(self, errors, input_text=None):
+        """Resalta errores en el editor basado en los mensajes de error"""
+        if input_text is None:
+            input_text = self.editor.get("1.0", tk.END)
+        input_lines = input_text.split('\n')
+            
+        self.editor.tag_remove("ERROR", "1.0", tk.END)
+            
+        for error in errors:
+            if "línea" not in error or "columna" not in error:
+                continue
+                    
+            try:
+                    # Extraer información de ubicación
+                line_part = error.split("línea")[1].split(",")[0].strip()
+                line = int(line_part)
+                col_part = error.split("columna")[1].split(":")[0].strip()
+                col = int(col_part)
+                    
+                if 1 <= line <= len(input_lines):
+                    # Calcular posición en el editor
+                    start = f"{line}.{col-1}"
+                    end = f"{line}.{col}"
+                        
+                    # Aplicar resaltado
+                    self.editor.tag_add("ERROR", start, end)
+                    self.editor.see(start)
+            except (ValueError, IndexError):
+                continue
+        
+    
+
+    
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -1,277 +1,382 @@
 import ply.yacc as yacc
 from lexico import tokens, lexer
-
-# Definición de nodos del AST
-# Cada nodo tiene un tipo, una lista de hijos, un valor opcional, y puede tener información de línea y posición léxica
-# También puede tener un operador si es relevante (por ejemplo, en expresiones) 
-
+import tempfile
 
 class ASTNode:
-    def __init__(self, type, children=None, value=None, lineno=None, lexpos=None, op=None):
+    def __init__(self, type, children=None, value=None, lineno=None, lexpos=None):
         self.type = type
         self.children = children if children is not None else []
         self.value = value
         self.lineno = lineno
         self.lexpos = lexpos
-        self.op = op
 
     def __repr__(self):
-        if self.op:
-            return f"{self.type} ({self.op})"
         return f"{self.type}: {self.value}" if self.value else self.type
 
-# Precedencia de operadores
 precedence = (
-    ('left', 'OR'),
-    ('left', 'AND'),
-    ('right', 'NOT'),
-    ('nonassoc', 'LT', 'LE', 'GT', 'GE', 'EEQ', 'NE'),
-    ('left', 'PLUS', 'MINUS'),
-    ('left', 'TIMES', 'DIVIDE', 'MODULO'),
-    ('left', 'LSHIFT', 'RSHIFT')
+    ('right', 'POWER'),
+    ('left', 'MODULO'),
+    ('left', 'TIMES', 'DIVIDE'),
+    ('left', 'PLUS', 'MIN'),
+    ('nonassoc', 'LT', 'LE', 'GT', 'GE', 'NE', 'EEQ'),
+    ('left', 'AND', 'OR'),
 )
 
 def p_programa(p):
-    'programa : MAIN LBRACE lista_declaraciones RBRACE'
-    p[0] = ASTNode('programa', children=[p[3]], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    '''programa : MAIN LBRACE lista_declaracion RBRACE'''
+    p[0] = ASTNode('programa', children=[p[3]], lineno=p.lineno(1))
 
-def p_lista_declaraciones(p):
-    '''lista_declaraciones : lista_declaraciones declaracion
-                          | declaracion'''
+def p_lista_declaracion(p):
+    '''lista_declaracion : lista_declaracion declaracion
+                        | declaracion'''
     if len(p) == 3:
-        p[0] = ASTNode('lista_declaraciones', children=[p[1], p[2]], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('lista_declaracion', children=[p[1], p[2]])
     else:
-        p[0] = ASTNode('lista_declaraciones', children=[p[1]], lineno=p.lineno(1), lexpos=p.lexpos(1))
-        
+        p[0] = ASTNode('lista_declaracion', children=[p[1]])
+
 def p_declaracion(p):
-    '''declaracion : declaracion_variable
-                   | sentencia
-                   | error SEMICOLON'''  # Manejo de errores no fatales
-    if len(p) == 2:
-        p[0] = p[1]
-    else:
-        p[0] = ASTNode('error', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-        print(f"Error recuperado en línea {p.lineno(1)}")
-
-def p_declaracion_variable(p):
-    '''declaracion_variable : tipo lista_ids SEMICOLON'''
-    p[0] = {
-        'type': 'declaration',
-        'var_type': p[1],
-        'variables': p[2],
-        'lineno': p.lineno(1)
-    }    
-    
-def p_lista_ids(p):
-    '''lista_ids : ID
-                | lista_ids COMMA ID'''
-    if len(p) == 2:
-        p[0] = [p[1]]
-    else:
-        p[0] = p[1] + [p[3]]
-        
-def p_tipo(p):
-    '''tipo : INT
-            | FLOAT
-            | BOOL'''  # Asegúrate que BOOL esté definido como token
-    p[0] = ASTNode('tipo', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-
-def p_lista_sentencias(p):
-    '''lista_sentencias : sentencia lista_sentencias
-                       | sentencia'''
-    if len(p) == 3:
-        p[0] = ASTNode('lista_sentencias', children=[p[1], p[2]], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    else:
-        p[0] = ASTNode('lista_sentencias', children=[p[1]], lineno=p.lineno(1), lexpos=p.lexpos(1))
-        
-def p_sentencia(p):
-    '''sentencia : asignacion
-                 | seleccion
-                 | iteracion
-                 | repeticion
-                 | sent_in
-                 | sent_out
-                 | incremento
-                 | decremento
-                 | error'''  # Manejo de errores en sentencias
+    '''declaracion : declaracion_variable 
+                  | lista_sentencias'''
     p[0] = p[1]
 
-def p_asignacion(p):
-    'asignacion : ID EQ expresion SEMICOLON'
-    p[0] = ASTNode('asignacion', children=[p[3]], value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    
-def p_sent_expresion(p):
-    '''sent_expresion : expresion SEMICOLON
-                      | SEMICOLON'''
-    if len(p) == 3:
-        p[0] = ASTNode('sent_expresion', children=[p[1]], lineno=p.lineno(2), lexpos=p.lexpos(2))
+def p_declaracion_variable(p):
+    '''declaracion_variable : tipo identificador SEMICOLON'''
+    p[0] = ASTNode('declaracion_variable', children=[p[1], p[2]])
+
+def p_identificador(p):
+    '''identificador : ID
+                    | ID COMMA identificador'''
+    if len(p) == 2:
+        p[0] = ASTNode('identificador', value=p[1])
     else:
-        p[0] = ASTNode('sent_expresion', lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('identificador_lista', children=[ASTNode('identificador', value=p[1]), p[3]])
+
+def p_tipo(p):
+    '''tipo : INT
+           | FLOAT'''
+    p[0] = ASTNode('tipo', value=p[1])
+
+def p_lista_sentencias(p):
+    '''lista_sentencias : lista_sentencias repeticion
+                       | lista_sentencias seleccion
+                       | lista_sentencias sentencia
+                       | repeticion
+                       | seleccion
+                       | sentencia'''
+    if len(p) == 3:
+        p[0] = ASTNode('lista_sentencias', [p[1], p[2]])
+    else:
+        p[0] = ASTNode('lista_sentencias', [p[1]])
+
+def p_sentencia(p):
+    '''sentencia : seleccion
+                | iteracion
+                | repeticion
+                | sent_in
+                | sent_out
+                | asignacion
+                | inc_dec_exp'''
+    p[0] = p[1]
+
+def p_inc_dec_exp(p):
+    '''inc_dec_exp : ID INCREMENT SEMICOLON
+                  | ID DECREMENT SEMICOLON'''
+    p[0] = ASTNode('inc_dec', value=p[2], children=[ASTNode('identificador', value=p[1])])
+
+def p_asignacion(p):
+    '''asignacion : ID EQ sent_expresion'''
+    p[0] = ASTNode('asignacion', children=[p[3]], value=p[1])
+
+def p_sent_expresion(p):
+    '''sent_expresion : expresion SEMICOLON'''
+    p[0] = p[1]
 
 def p_seleccion(p):
-    '''seleccion : IF expresion THEN LBRACE lista_sentencias RBRACE END
-                 | IF expresion THEN LBRACE lista_sentencias RBRACE ELSE LBRACE lista_sentencias RBRACE END'''
-    node = {
-        'type': 'if-then',
-        'condition': p[2],
-        'then_body': p[5],
-        'lineno': p.lineno(1)
-    }
-    if len(p) > 8:
-        node['type'] = 'if-then-else'
-        node['else_body'] = p[9]
-    p[0] = node
-    
-def p_incremento(p):
-    'incremento : ID INCREMENT SEMICOLON'
-    p[0] = ASTNode('incremento', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    
-def p_decremento(p):
-    'decremento : ID DECREMENT SEMICOLON'
-    p[0] = ASTNode('decremento', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-            
+    '''seleccion : IF condicion THEN bloque_condicional
+                | IF condicion THEN bloque_condicional ELSE bloque_condicional'''
+    if len(p) == 5:
+        p[0] = ASTNode('if_then', children=[p[2], p[4]], lineno=p.lineno(1))
+    else:
+        p[0] = ASTNode('if_then_else', children=[p[2], p[4], p[6]], lineno=p.lineno(1))
+        
+def p_condicion(p):
+    '''condicion : expresion
+                | expresion_relacional
+                | expresion_logica'''
+    p[0] = p[1]
+        
+def p_bloque(p):
+    '''bloque : LBRACE lista_sentencias RBRACE
+             | sentencia'''
+    if len(p) == 4:
+        p[0] = p[2]
+    else:
+        p[0] = ASTNode('bloque', children=[p[1]])
+        
+def p_bloque_condicional(p):
+    '''bloque_condicional : LBRACE lista_sentencias RBRACE
+                         | sentencia
+                         | lista_sentencias END'''
+    if len(p) == 4:
+        p[0] = p[2]
+    elif len(p) == 3:
+        p[0] = p[1]
+    else:
+        p[0] = ASTNode('bloque', children=[p[1]])
+        
+
+
+def p_empty(p):
+    'empty :'
+    p[0] = ASTNode('empty')
+
 def p_iteracion(p):
-    'iteracion : WHILE expresion LBRACE lista_sentencias RBRACE END'
-    p[0] = ASTNode('while', children=[p[2], p[4]], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    
+    '''iteracion : WHILE LPAREN expresion RPAREN LBRACE lista_sentencias RBRACE
+                 | WHILE expresion lista_sentencias END'''
+    if len(p) == 8:
+        # Forma clásica con paréntesis y llaves
+        p[0] = ASTNode('while', children=[p[3], p[6]])
+    else:
+        # Forma libre sin paréntesis ni llaves
+        p[0] = ASTNode('while', children=[p[2], p[3]])
+
 def p_repeticion(p):
-    '''repeticion : DO LBRACE lista_sentencias RBRACE WHILE expresion SEMICOLON
-                 | DO LBRACE lista_sentencias RBRACE UNTIL expresion SEMICOLON'''
-    p[0] = {
-        'type': 'do-while' if p[5] == 'while' else 'do-until',
-        'body': p[3],
-        'condition': p[6],
-        'lineno': p.lineno(1)
-    }
-    
+    '''repeticion : DO lista_sentencias bloque_while_opcional UNTIL expresion
+                  | WHILE expresion lista_sentencias END'''
+    if p[1] == 'do':
+        p[0] = ASTNode('do_until', [p[2], p[3], p[5]], lineno=p.lineno(1))
+    else:
+        p[0] = ASTNode('while', [p[2], p[3]], lineno=p.lineno(1))
+        
+def p_bloque_while_opcional(p):
+    '''bloque_while_opcional : WHILE expresion lista_sentencias END
+                            | empty'''
+    if len(p) > 2:
+        p[0] = ASTNode('while_anidado', [p[2], p[3]], lineno=p.lineno(1))
+    else:
+        p[0] = ASTNode('empty')
+        
+def p_anidados_while(p):
+    '''anidados_while : WHILE expresion lista_sentencias END
+                     | empty'''
+    if len(p) > 2:  # Cuando hay contenido real
+        p[0] = ASTNode('while_anidado', [p[2], p[3]], lineno=p.lineno(1))
+    else:  # Cuando es empty
+        p[0] = p[1]  # Usa el nodo empty ya creado
+        
+def p_bloque_repeticion(p):
+    '''bloque_repeticion : LBRACE lista_sentencias RBRACE
+                        | sentencia
+                        | lista_sentencias END'''
+    if len(p) == 4:
+        p[0] = p[2]
+    elif len(p) == 3:
+        p[0] = p[1]
+    else:
+        p[0] = ASTNode('bloque', [p[1]])
+
 def p_sent_in(p):
-    'sent_in : CIN RSHIFT ID SEMICOLON'
-    p[0] = ASTNode('sent_in', value=p[3], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    '''sent_in : CIN OP_IN ID SEMICOLON
+              | CIN OP_IN ID OP_IN ID SEMICOLON'''  # Para múltiples entradas
+    if len(p) == 5:
+        p[0] = ASTNode('input', [ASTNode('variable', value=p[3])], lineno=p.lineno(1))
+    else:
+        p[0] = ASTNode('input', [
+            ASTNode('variable', value=p[3]),
+            ASTNode('variable', value=p[5])
+        ], lineno=p.lineno(1))
 
 def p_sent_out(p):
-    '''sent_out : COUT LSHIFT CADENA SEMICOLON
-                | COUT LSHIFT expresion SEMICOLON
-                | COUT LSHIFT CADENA LSHIFT expresion SEMICOLON
-                | COUT LSHIFT expresion LSHIFT CADENA SEMICOLON'''
+    '''sent_out : COUT OP_OUT expresion SEMICOLON
+               | COUT OP_OUT expresion OP_OUT expresion SEMICOLON'''  # Múltiples salidas
     if len(p) == 5:
-        p[0] = ASTNode('sent_out', children=[p[3]], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('output', [p[3]], lineno=p.lineno(1))
     else:
-        p[0] = ASTNode('sent_out', children=[p[3], p[5]], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('output', [p[3], p[5]], lineno=p.lineno(1))
+    
+def p_expresion_simple(p):
+    '''expresion_simple : termino
+                       | expresion_simple PLUS termino
+                       | expresion_simple MIN termino'''  # Cambio importante aquí
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = ASTNode('expresion_binaria', children=[p[1], p[3]], value=p[2])
 
 def p_expresion(p):
-    '''expresion : expresion AND expresion
-                 | expresion OR expresion
-                 | NOT expresion
-                 | expresion_relacional'''
-    if len(p) == 4:
-        p[0] = ASTNode('expresion_logica', children=[p[1], p[3]], op=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
-    elif len(p) == 3:
-        p[0] = ASTNode('expresion_logica', children=[p[2]], op=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    else:
+    '''expresion : expresion_relacional
+                | expresion logico_op expresion_relacional'''
+    if len(p) == 2:
         p[0] = p[1]
+    else:
+        p[0] = ASTNode('expresion_logica', children=[p[1], p[3]], value=p[2])
+
+def p_expresion_condicion(p):
+    '''expresion_condicion : expresion_relacional
+                          | expresion'''
+    p[0] = p[1]
+        
+def p_expresion_logica(p):
+    '''expresion_logica : expresion_relacional
+                       | expresion_logica AND expresion_relacional
+                       | expresion_logica OR expresion_relacional
+                       | NOT expresion_relacional'''
+    if len(p) == 2:
+        p[0] = p[1]
+    elif len(p) == 3:
+        p[0] = ASTNode('not_expr', children=[p[2]], lineno=p.lineno(1))
+    else:
+        p[0] = ASTNode('logica_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2))
+def p_componente(p):
+    '''componente : LPAREN expresion RPAREN
+                 | numero
+                 | ID'''
+    if len(p) == 4:
+        p[0] = p[2]
+    else:
+        p[0] = ASTNode('componente', value=p[1])
+
+def p_logico_op(p):
+    '''logico_op : AND
+                | OR'''
+    p[0] = p[1]
 
 def p_expresion_relacional(p):
     '''expresion_relacional : expresion_simple
-                            | expresion_simple rel_op expresion_simple'''
+                           | expresion_simple relacion_op expresion_simple'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('expresion_relacional', children=[p[1], p[3]], op=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
-  
-def p_expresion_simple(p):
-    '''expresion_simple : termino
-                       | expresion_simple suma_op termino'''
-    if len(p) == 2:
-        p[0] = p[1]
-    else:
-        p[0] = ASTNode('expresion_binaria', 
+        p[0] = ASTNode('expresion_relacional', 
                       children=[p[1], p[3]], 
-                      op=p[2],
-                      lineno=p.lineno(2), 
-                      lexpos=p.lexpos(2))
-def p_rel_op(p):
-    '''rel_op : LT
-              | LE
-              | GT
-              | GE
-              | NE
-              | EEQ'''
+                      value=p[2],  # Aquí guardamos el operador
+                      lineno=p.lineno(2))
+
+def p_relacion_op(p):
+    '''relacion_op : LT
+                  | LE
+                  | GT
+                  | GE
+                  | NE
+                  | EEQ'''
     p[0] = p[1]
 
-def p_expresion_simple(p):
-    '''expresion_simple : termino
-                        | expresion_simple suma_op termino'''
-    if len(p) == 2:
-        p[0] = p[1]
-    else:
-        p[0] = ASTNode('expresion_suma', children=[p[1], p[3]], op=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
+
 
 def p_suma_op(p):
     '''suma_op : PLUS
-               | MINUS'''
+              | MIN'''
+              
     p[0] = p[1]
 
 def p_termino(p):
     '''termino : factor
-               | termino mult_op factor'''
+              | termino TIMES factor
+              | termino DIVIDE factor
+              | termino MODULO factor'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('expresion_mult', children=[p[1], p[3]], op=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
+        p[0] = ASTNode('operacion_binaria', children=[p[1], p[3]], value=p[2])
 
 def p_mult_op(p):
     '''mult_op : TIMES
-               | DIVIDE
-               | MODULO'''
+              | DIVIDE
+              | MODULO'''
     p[0] = p[1]
 
 def p_factor(p):
     '''factor : componente
-              | PLUS factor
-              | MINUS factor'''
+             | componente POWER componente'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('expresion_unaria', children=[p[2]], op=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('potencia', children=[p[1], p[3]])
 
-def p_componente(p):
-    '''componente : LPAREN expresion RPAREN
-                  | NUMBER
-                  | REAL
-                  | ID
-                  | TRUE
-                  | FALSE
-                  | STRING'''  # Asegúrate que STRING esté definido
-    if len(p) == 4:
-        p[0] = p[2]
+def p_pot_op(p):
+    '''pot_op : POWER'''
+    p[0] = p[1]
+
+
+def p_numero(p):
+    '''numero : NUMBER
+             | REAL
+             | MIN NUMBER %prec MIN
+             | MIN REAL %prec MIN'''
+    if len(p) == 2:
+        p[0] = ASTNode('numero', value=p[1], lineno=p.lineno(1))
     else:
-        p[0] = ASTNode('componente', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
+        p[0] = ASTNode('numero_negativo', value=f"-{p[2]}", lineno=p.lineno(1))
+
 def p_error(p):
     if p:
-        error_msg = f"Error de sintaxis en línea {p.lineno}, columna {find_column(lexer, p.lexpos)}:\n"
-        error_msg += f"Token inesperado: '{p.value}'\n"
+        error_msg = {
+            'type': 'sintactico',
+            'value': p.value,
+            'token_type': p.type,
+            'line': p.lineno,
+            'column': find_column(p),
+            'message': f"Token inesperado '{p.value}'"
+        }
         
-        # Obtener el contexto de la línea
-        input_lines = lexer.lexdata.split('\n')
-        if 0 <= p.lineno-1 < len(input_lines):
-            error_msg += f"Contexto: {input_lines[p.lineno-1]}\n"
-            error_msg += " "*(find_column(lexer, p.lexpos)-1) + "^\n"
+        print(f"[ERROR] Línea {error_msg['line']}:{error_msg['column']} - {error_msg['message']}")
         
         if not hasattr(parser, 'errors'):
             parser.errors = []
         parser.errors.append(error_msg)
         
-        # Recuperación: saltar hasta el siguiente punto y coma
+        # Recuperación: saltar hasta el siguiente punto seguro
         parser.errok()
-        return parser.token()
+        return parser.token()  # Leer siguiente token
     else:
-        error_msg = "Error de sintaxis: Fin de archivo inesperado"
-        if hasattr(parser, 'errors'):
-            parser.errors.append(error_msg)
+        error_msg = {
+            'type': 'sintactico',
+            'message': "Fin de archivo inesperado"
+        }
+        print(f"[ERROR] {error_msg['message']}")
+        parser.errors.append(error_msg)
+def find_column(p):
+    last_cr = p.lexer.lexdata.rfind('\n', 0, p.lexpos)
+    if last_cr < 0:
+        last_cr = 0
+    column = (p.lexpos - last_cr)
+    return column
+
+def read_tokens_from_file(file_path):
+    """Lee tokens desde un archivo y los devuelve en formato para el parser"""
+    tokens = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            if line.strip() and not line.startswith("TOKENS"):
+                parts = line.split()
+                if len(parts) >= 2:
+                    token_type = parts[0]
+                    token_value = parts[1]
+                    tokens.append((token_type, token_value))
+    return tokens
+
+parser = yacc.yacc()
 
 def parse_code(input_text):
-    parser.errors = []
+    # Primero generar el archivo temporal con los tokens
     lexer.input(input_text)
+    temp_file = tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False)
+    temp_file.write("TOKENS GENERADOS:\n")
+    temp_file.write("----------------\n")
+    
+    tokens_list = []
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break
+        tokens_list.append(tok)
+        temp_file.write(f"{tok.type:<10} {tok.value:<10} linea {tok.lineno} pos {tok.lexpos}\n")
+    
+    temp_file.close()
+    print(f"Tokens guardados en archivo temporal: {temp_file.name}")
+    
+    # Ahora parsear usando los tokens generados
+    parser.errors = []
     try:
         ast = parser.parse(input_text, lexer=lexer, debug=False)
         return {
@@ -280,88 +385,11 @@ def parse_code(input_text):
             'success': len(parser.errors) == 0
         }
     except Exception as e:
-        error_msg = f"Error fatal durante el análisis: {str(e)}"
-        parser.errors.append(error_msg)
+        error = f"Error fatal: {str(e)}"
+        print(error)
+        parser.errors.append(error)
         return {
             'ast': None,
             'errors': parser.errors,
             'success': False
         }
-        
-def generate_ast_view(node, level=0):
-    """Genera la vista jerárquica del AST"""
-    indent = "    " * level
-    result = ""
-    
-    if isinstance(node, dict):
-        if node['type'] == 'programa':
-            result += f"{indent}Raíz: programa\n"
-            for child in node['body']:
-                result += generate_ast_view(child, level+1)
-                
-        elif node['type'] == 'declaration':
-            result += f"{indent}- {node['var_type']}\n"
-            for var in node['variables']:
-                result += f"{indent}    - {var}\n"
-                
-        elif node['type'] == 'if-then':
-            result += f"{indent}- if-then\n"
-            result += generate_ast_view(node['condition'], level+1)
-            result += generate_ast_view(node['body'], level+1)
-            
-        elif node['type'] == 'asignacion':
-            result += f"{indent}- =\n"
-            result += f"{indent}    - {node['left']}\n"
-            result += generate_ast_view(node['right'], level+2)
-            
-        elif node['type'] == 'while':
-            result += f"{indent}- while\n"
-            result += generate_ast_view(node['condition'], level+1)
-            result += generate_ast_view(node['body'], level+1)
-        elif node['type'] == 'sent_out':
-            result += f"{indent}- sent_out\n"
-            for child in node['children']:
-                result += generate_ast_view(child, level+1)
-        elif node['type'] == 'sent_in':
-            result += f"{indent}- sent_in\n"
-            result += f"{indent}    - {node['value']}\n"
-        elif node['type'] == 'sent_expresion':
-            result += f"{indent}- sent_expresion\n"
-            if node['children']:
-                for child in node['children']:
-                    result += generate_ast_view(child, level+1)
-        elif node['type'] == 'error':
-            result += f"{indent}- error: {node['value']}\n"
-        else:
-            result += f"{indent}- {node['type']}\n"
-            if 'children' in node:
-                for child in node['children']:
-                    result += generate_ast_view(child, level+1)
-    elif isinstance(node, ASTNode):
-        result += f"{indent}- {node.type}"
-        if node.value is not None:
-            result += f": {node.value}"
-        if node.op is not None:
-            result += f" ({node.op})"
-        result += f" (linea {node.lineno}, pos {node.lexpos})\n"
-        for child in node.children:
-            result += generate_ast_view(child, level+1)
-
-    elif isinstance(node, list):
-        for item in node:
-            result += generate_ast_view(item, level)
-            
-    else:  # nodos hoja
-        result += f"{indent}- {node}\n"
-        
-    return result
-        
-def find_column(lexer, lexpos):
-    last_cr = lexer.lexdata.rfind('\n', 0, lexpos)
-    if last_cr < 0:
-        last_cr = 0
-    return (lexpos - last_cr)
-
-# Construir el parser
-parser = yacc.yacc(debug=False, write_tables=False)
-parser.lexer = lexer 

@@ -2,6 +2,37 @@ import ply.yacc as yacc
 from lexico import tokens, lexer
 import tempfile
 
+# Definición de la gramática y las reglas de producción
+# programa —> 		    MAIN LLAVE_I lista_declaracion LLAVE_D,
+# lista_declaracion —> 	declaracion { declaracion },
+# declaración -> 		    declaracion_variable | lista_sentencias,
+# declaracion_variable ->	tipo identificador PUNTO_Y_COMA,
+# identificador -> 	    IDENTIFICADOR { COMA IDENTIFICADOR },
+# tipo —> 		        INTEGER | DOUBLE,
+# lista_sentencias —> 	vacio { sentencia },
+# sentencia -> 		    seleccion | iteracion | repeticion | sent_in | sent_out | asignacion | inc_dec_exp,
+# inc_dec_exp ->		    IDENTIFICADOR inc_dec_op PUNTO_Y_COMA,
+# inc_dec_op ->		    INCREMENTO | DECREMENTO,
+# asignación -> 		    IDENTIFICADOR ASIGNACION sent_expresion,
+# sent_expresion -> 	    expresion PUNTO_Y_COMA,
+# seleccion -> 		    IF PARENTESIS_I expresion PARENTESIS_D LLAVE_I lista_sentencias LLAVE_D | IF PARENTESIS_I expresion PARENTESIS_D LLAVE_I lista_sentencias LLAVE_D ELSE LLAVE_I lista_sentencias LLAVE_D,
+# iteracion -> 		    WHILE PARENTESIS_I expresion PARENTESIS_D LLAVE_I lista_sentencias LLAVE_D,
+# repeticion -> 		    DO LLAVE_I lista_sentencias LLAVE_D WHILE PARENTESIS_I expresion PARENTESIS_D PUNTO_Y_COMA,
+# sent_in -> 		        CIN INDENTIFICADOR PUNTO_Y_COMA,
+# sent_out -> 		    COUT expresion PUNTO_Y_COMA,
+# expresion -> 		    expresion_relacional logico_op expresion_relacional | expresion_relacional,
+# logico_op ->		    AND | OR,
+# expresion_relacional ->	expresion_simple relacion_op expresion_simple | expresion_simple,
+# relacion_op -> 		    MENOR | MENOR_IGUAL | MAYOR | MAYOR_IGUAL | IGUAL | DIFERENTE,
+# expresion_simple -> 	termino { suma_op termino },
+# suma_op ->		        SUMA | RESTA,
+# termino ->		        factor { mult_op factor },
+# mult_op ->		        MULTIPLICACION | DIVISION | MODULO,
+# factor ->		        componente { pot_op componente },
+# pot_op ->		        POTENCIA,
+# componente ->		    PARENTESIS_I expresion PARENTESIS_D | numero | IDENTIFICADOR,
+# numero ->		        ENTERO | REAL | ENTERO_NEG | REAL_NEG,
+
 class ASTNode:
     def __init__(self, type, children=None, value=None, lineno=None, lexpos=None):
         self.type = type

@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+
+from setuptools import Command
 from sintactico import ASTNode, parse_code
 from lexico import test_lexer
 from sintactico import parse_code
@@ -576,7 +578,7 @@ class IDE:
         
         self.token_tree = ttk.Treeview(
         token_frame, 
-        columns=("Lexema", "Token", "Subtokens"), 
+        columns=("Lexema", "Token"), 
         show="headings",
         selectmode="extended"
      )
@@ -584,12 +586,11 @@ class IDE:
         # Configurar columnas
         self.token_tree.column("Lexema", width=150, anchor=tk.W, stretch=tk.YES)
         self.token_tree.column("Token", width=120, anchor=tk.W, stretch=tk.YES)
-        # self.token_tree.column("Subtokens", width=200, anchor=tk.W, stretch=tk.YES)
-
+        
         # Configurar encabezados
         self.token_tree.heading("Lexema", text="LEXEMA", anchor=tk.W)
         self.token_tree.heading("Token", text="TOKEN", anchor=tk.W)
-        # self.token_tree.heading("Subtokens", text="SUBTOKEN", anchor=tk.W)
+        
         
         # Scrollbars
         vsb = ttk.Scrollbar(token_frame, orient="vertical", command=self.token_tree.yview)
@@ -605,19 +606,45 @@ class IDE:
         token_frame.grid_columnconfigure(0, weight=1)
         
         # ------------------------- Pestaña SINTÁCTICO -------------------------
+        
+        # Pestaña Sintáctico
         self.tab_sintactico = ttk.Frame(self.execution_tabs)
         self.execution_tabs.add(self.tab_sintactico, text="Sintáctico")
-        
-        self.output_sintactico = tk.Text(
-            self.tab_sintactico, 
-            wrap=tk.WORD, 
-            width=80, 
-            height=10,
-            bg="white",
-            fg="black",
-            font=("Consolas", 10)
+
+        # Contenedor para la tabla
+        sintactico_frame = tk.Frame(self.tab_sintactico)
+        sintactico_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.token_tree_sintactico = ttk.Treeview(
+            sintactico_frame,
+            columns=("Nodo", "Tipo", "Línea", "Columna"),
+            show="headings",
+            selectmode="extended"
         )
-        self.output_sintactico.pack(fill=tk.BOTH, expand=True)
+
+        # Columnas
+        self.token_tree_sintactico.column("Nodo", width=100, anchor=tk.W)
+        self.token_tree_sintactico.column("Tipo", width=100, anchor=tk.W)
+        self.token_tree_sintactico.column("Línea", width=80, anchor=tk.W)
+        self.token_tree_sintactico.column("Columna", width=80, anchor=tk.W)
+
+        # Encabezados
+        self.token_tree_sintactico.heading("Nodo", text="Nodo")
+        self.token_tree_sintactico.heading("Tipo", text="Tipo")
+        self.token_tree_sintactico.heading("Línea", text="Línea")
+        self.token_tree_sintactico.heading("Columna", text="Columna")
+
+        # Scrollbars
+        vsb_syn = ttk.Scrollbar(sintactico_frame, orient="vertical", command=self.token_tree_sintactico.yview)
+        hsb_syn = ttk.Scrollbar(sintactico_frame, orient="horizontal", command=self.token_tree_sintactico.xview)
+        self.token_tree_sintactico.configure(yscrollcommand=vsb_syn.set, xscrollcommand=hsb_syn.set)
+
+        # Diseño grid
+        self.token_tree_sintactico.grid(row=0, column=0, sticky="nsew")
+        vsb_syn.grid(row=0, column=1, sticky="ns")
+        hsb_syn.grid(row=1, column=0, sticky="ew")
+        sintactico_frame.grid_rowconfigure(0, weight=1)
+        sintactico_frame.grid_columnconfigure(0, weight=1)
         
         # ------------------------- Pestaña SEMÁNTICO -------------------------
         self.tab_semantico = ttk.Frame(self.execution_tabs)
@@ -1027,8 +1054,8 @@ class IDE:
 
     
     def compile_sintactico(self):
-        self.output_sintactico.config(state=tk.NORMAL)
-        self.output_sintactico.delete(1.0, tk.END)
+    # Limpiar resultados anteriores
+        self.token_tree_sintactico.delete(*self.token_tree_sintactico.get_children())
         self.output_errores.config(state=tk.NORMAL)
         self.output_errores.delete(1.0, tk.END)
         
@@ -1037,50 +1064,122 @@ class IDE:
         try:
             result = parse_code(input_text)
             
-            self.output_sintactico.insert(tk.END, "=== ANÁLISIS SINTÁCTICO ===\n\n")
             self.output_errores.insert(tk.END, "=== ERRORES SINTÁCTICOS ===\n", "error_header")
             
             if result['success'] and result['ast']:
-                self.output_sintactico.insert(tk.END, "El código es sintácticamente correcto.\n\n")
-                self.output_sintactico.insert(tk.END, "=== ESTRUCTURA DEL ÁRBOL SINTÁCTICO ===\n\n")
-                self._print_ast_structure(result['ast'], self.output_sintactico)
+                # Llenar la tabla con información del AST
+                self._fill_syntax_table(result['ast'])
                 
-                # Mostrar el árbol visual solo si hay un AST válido
-                if result['ast']:
-                    self.show_ast(result['ast'])
+                # Mostrar el árbol visual
+                self.show_ast(result['ast'])
+                
+                self.output_errores.insert(tk.END, "No se encontraron errores sintácticos.\n", "no_errors")
             else:
-                self.output_sintactico.insert(tk.END, "Se encontraron errores sintácticos:\n\n")
                 error_count = 0
-                
                 for error in result.get('errors', []):
                     error_count += 1
-                    # Formatear el mensaje de error para ambos paneles
                     error_msg = ""
                     if 'line' in error and 'column' in error:
                         error_msg = f"Error {error_count}: Línea {error['line']}, Columna {error['column']}: {error['message']}\n"
                     else:
                         error_msg = f"Error {error_count}: {error.get('message', str(error))}\n"
                     
-                    self.output_sintactico.insert(tk.END, error_msg)
                     self.output_errores.insert(tk.END, error_msg, "error_detail")
                 
                 if error_count > 0:
                     self.output_errores.insert(tk.END, f"\nTotal de errores sintácticos: {error_count}\n", "error_header")
-                else:
-                    self.output_errores.insert(tk.END, "No se encontraron errores sintácticos.\n", "no_errors")
                 
                 if input_text.strip():
                     self._highlight_error_in_editor(result.get('errors', []), input_text)
                     
         except Exception as e:
             error_msg = f"Error durante el análisis sintáctico: {str(e)}\n"
-            self.output_sintactico.insert(tk.END, error_msg)
             self.output_errores.insert(tk.END, error_msg, "error_detail")
             import traceback
             traceback.print_exc()
         
-        self.output_sintactico.config(state=tk.DISABLED)
         self.output_errores.config(state=tk.DISABLED)
+        
+    # En ide.py, modifica _fill_syntax_table:
+
+    def _fill_syntax_table(self, ast_root):
+        """Llena la tabla de sintáctico con información del AST"""
+        self.token_tree_sintactico.delete(*self.token_tree_sintactico.get_children())
+
+        # Nodos que queremos omitir (mantenemos esta funcionalidad)
+        NODOS_OMITIR = {
+            'lista_declaracion',
+            'lista_identificadores', 
+            'declaracion_variable',
+            'lista_sentencias'
+        }
+
+        # Obtener el texto completo del editor para cálculo preciso de columnas
+        input_text = self.editor.get("1.0", tk.END)
+        lines = input_text.split('\n')
+
+        def calculate_column(lineno, lexpos):
+            """Función auxiliar para calcular la columna exacta"""
+            if lineno is None or lexpos is None:
+                return ''
+            
+            try:
+                # Asegurarnos que la línea existe
+                if 0 <= lineno-1 < len(lines):
+                    line_start_pos = 0
+                    for i in range(lineno-1):
+                        line_start_pos += len(lines[i]) + 1  # +1 por el \n
+                    
+                    column = lexpos - line_start_pos + 1  # +1 para base 1
+                    return max(1, column)  # Asegurar que sea al menos 1
+            except Exception as e:
+                print(f"Error calculando columna: {e}")
+            return ''
+
+        def traverse(node, parent=""):
+            if not isinstance(node, ASTNode):
+                return
+
+            # Si es un nodo que queremos omitir, procesamos sus hijos pero no lo mostramos
+            if node.type in NODOS_OMITIR:
+                if hasattr(node, 'children'):
+                    for child in node.children:
+                        traverse(child, parent)
+                return
+
+            # Columna "Nodo"
+            node_display = node.type
+            value = getattr(node, 'value', None)
+            if value is not None:
+                node_display = f"{node.type} ({value})"
+                
+
+
+            # Columnas "Línea" y "Columna"
+            # restar total de lineas a linea obtenida
+            # para que coincida con la posición real en el editor
+            line = getattr(node, 'lineno', None)    
+            if line is not None:
+                line = max(1, line -  len(lines) + 1)  # Asegurar que sea al menos 1
+            else:
+                line = ''
+            lexpos = getattr(node, 'lexpos', '')
+            column = calculate_column(line, lexpos) if line and lexpos else ''
+
+            item = self.token_tree_sintactico.insert(
+                parent, "end",
+                values=(node_display, node.type, line, column)
+            )
+
+            if hasattr(node, 'children'):
+                for child in node.children:
+                    traverse(child, item)
+            
+            self.token_tree_sintactico.item(item, open=True)
+
+        if ast_root:
+            traverse(ast_root)
+        
     def _create_error_tooltip(self, position, message):
         """Crea un tooltip para mostrar el mensaje de error"""
         bbox = self.editor.bbox(position)
@@ -1109,15 +1208,23 @@ class IDE:
         tooltip.after(5000, tooltip.destroy)
 
     def _print_ast_structure(self, node, output_widget, level=0):
-        """Muestra la estructura del AST en formato textual"""
+        """Muestra la estructura del AST en formato de tabla (Nodo, Tipo, Línea, Columna)"""
         indent = "  " * level
-        node_text = f"{indent}- {node.type}"
         
-        # Solo mostrar valor si existe
-        if hasattr(node, 'value') and node.value is not None:
-            node_text += f" (valor: {node.value})"
+        # Obtener información del nodo
+        node_name = node.type
+        node_type = type(node).__name__
+        line = getattr(node, 'lineno', 'N/A')
+        column = getattr(node, 'lexpos', 'N/A')  # Nota: lexpos es la posición absoluta, no la columna
         
-        output_widget.insert(tk.END, node_text + "\n")
+        # Si es un nodo hoja con valor, mostrarlo
+        value = getattr(node, 'value', '')
+        if value and not node.children:
+            node_name = f"{value} ({node_name})"
+        
+        # Formatear la línea como una fila de tabla
+        line_text = f"{indent}{node_name:<20} {node_type:<15} {str(line):<10} {str(column):<10}\n"
+        output_widget.insert(tk.END, line_text)
         
         # Recorrer hijos si existen
         if hasattr(node, 'children'):
@@ -1244,3 +1351,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     ide = IDE(root)
     root.mainloop()
+

@@ -22,6 +22,9 @@ reserved = {
     'until': 'UNTIL', 'true': 'TRUE', 'false': 'FALSE'
 }
 
+
+
+
 class TextLineNumbers(tk.Canvas):
     def __init__(self, *args, **kwargs):
         tk.Canvas.__init__(self, *args, **kwargs)
@@ -80,6 +83,14 @@ class CustomText(tk.Text):
         self._orig = self._w + "_orig"
         self.tk.call("rename", self._w, self._orig)
         self.tk.createcommand(self._w, self._proxy)
+        
+        #nodos a omitir
+        self.omit_nodes = {
+            'lista_declaracion',
+            'lista_identificadores', 
+            'lista_sentencias',
+        }
+            
         
         # Configuración del editor
         self.config(
@@ -379,6 +390,12 @@ class CustomText(tk.Text):
                 except (IndexError, ValueError):
                     continue
 class IDE:
+    NODOS_OMITIR = {
+        'lista_declaracion',
+        'lista_identificadores', 
+        'lista_sentencias',
+    }
+     
     def __init__(self, root):
         self.root = root
         self.root.title("IDE para Compilador")
@@ -1100,7 +1117,7 @@ class IDE:
         
         self.output_errores.config(state=tk.DISABLED)
         
-    # En ide.py, modifica _fill_syntax_table:
+   
 
     def _fill_syntax_table(self, ast_root):
         """Llena la tabla de sintáctico con información del AST"""
@@ -1237,25 +1254,34 @@ class IDE:
                 self._print_ast_structure(child, output_widget, level + 1)
 
     def show_ast(self, ast_root):
-        """Muestra una ventana con el árbol sintáctico visual"""
+        """Muestra una ventana con el árbol sintáctico visual mejorado"""
         ast_window = tk.Toplevel(self.root)
         ast_window.title("Árbol Sintáctico Abstracto (AST)")
-        ast_window.geometry("800x600")
+        ast_window.geometry("1000x600")  # Ventana más grande para acomodar fuente grande
+        
+        # Configurar fuente grande
+        big_font = ('Helvetica', 14, 'bold')
         
         # Frame principal
         main_frame = tk.Frame(ast_window)
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Configurar estilo para Treeview con fuente grande
+        style = ttk.Style()
+        style.configure("Big.Treeview", font=big_font, rowheight=35)
+        style.configure("Big.Treeview.Heading", font=('Helvetica', 16, 'bold'))
         
         # Treeview para mostrar el AST
-        tree = ttk.Treeview(main_frame)
-        tree.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        tree = ttk.Treeview(main_frame, style="Big.Treeview")
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=tree.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         tree.configure(yscrollcommand=scrollbar.set)
         
-        # Construir el árbol visual
+        tree.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        
+        # Construir el árbol visual mejorado
         self._build_ast_tree(tree, "", ast_root)
         
         # Botones de control
@@ -1270,28 +1296,76 @@ class IDE:
                 command=ast_window.destroy).pack(side=tk.RIGHT, padx=5)
 
     def _build_ast_tree(self, treeview, parent, node):
-        """Construye recursivamente el árbol visual"""
+        """Construye recursivamente el árbol visual mejorado"""
         if not isinstance(node, ASTNode):
             return
-        # Obtener información del nodo
+            
+        # Obtener texto para cálculo de posición
+        input_text = self.editor.get("1.0", tk.END)
+        lines = input_text.split('\n')
+        total_lines = len(lines)
+        
+        # Omitir nodos no deseados
+        if node.type in self.NODOS_OMITIR:
+            for child in node.children:
+                self._build_ast_tree(treeview, parent, child)
+            return
+        
+        # Calcular línea ajustada
+        line = getattr(node, 'lineno', None)
+        line_text = ""
+        if line is not None:
+            adjusted_line = max(1, line - (total_lines - 1))
+            line_text = f" [Línea: {adjusted_line}]"
+        
+        # Caso especial: Incrementos/decrementos
+        
+        
+        # Caso especial: Asignaciones
+        if node.type == 'asignacion':
+            assign_text = f"={line_text}"
+            assign_id = treeview.insert(parent, "end", text=assign_text)
+            
+            # Variable asignada
+            var_node = node.children[0]
+            var_line = getattr(var_node, 'lineno', None)
+            var_line_text = f" [Línea: {max(1, var_line - (total_lines - 1))}]" if var_line else ""
+            treeview.insert(assign_id, "end", text=f"{var_node.value}{var_line_text}")
+            
+            # Expresión derecha
+            self._build_expr_tree(treeview, assign_id, node.children[1], total_lines)
+            return
+        
+        # Nodos normales
         node_text = node.type
-        
-        
-        # Solo añadir valor si existe
         if hasattr(node, 'value') and node.value is not None:
             node_text += f": {node.value}"
-        
-        # Solo añadir información de línea si existe
-        if hasattr(node, 'lineno') and node.lineno is not None:
-            node_text += f" [Línea: {node.lineno}]"
+        node_text += line_text
         
         node_id = treeview.insert(parent, "end", text=node_text)
         
-        # Recorrer hijos si existen
+        # Procesar hijos
         if hasattr(node, 'children'):
             for child in node.children:
                 self._build_ast_tree(treeview, node_id, child)
-
+    def _build_expr_tree(self, treeview, parent, node, total_lines):
+        """Construye subárbol para expresiones"""
+        if not isinstance(node, ASTNode):
+            return
+        
+        line = getattr(node, 'lineno', None)
+        line_text = f" [Línea: {max(1, line - (total_lines - 1))}]" if line else ""
+        
+        if node.type == 'expresion_binaria':
+            op_text = f"{node.value}{line_text}"
+            op_id = treeview.insert(parent, "end", text=op_text)
+            
+            for child in node.children:
+                self._build_expr_tree(treeview, op_id, child, total_lines)
+        else:
+            node_text = f"{node.value if hasattr(node, 'value') else node.type}{line_text}"
+            treeview.insert(parent, "end", text=node_text)
+        
 
     def _expand_tree(self, tree, item):
         """Expande todos los nodos del árbol"""
@@ -1299,7 +1373,6 @@ class IDE:
         for child in children:
             self._expand_tree(tree, child)
         tree.item(item, open=True)
-
 
     def _collapse_tree(self, tree, item):
         """Contrae todos los nodos del árbol"""

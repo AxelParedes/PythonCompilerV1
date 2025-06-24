@@ -123,12 +123,19 @@ def p_sentencia(p):
                 | inc_dec_exp'''
     p[0] = p[1]
 
+
 def p_inc_dec_exp(p):
     '''inc_dec_exp : ID INCREMENT SEMICOLON
                   | ID DECREMENT SEMICOLON'''
-    p[0] = ASTNode('inc_dec', value=p[2], children=[
-        ASTNode('identificador', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
-    ], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    operador = '+' if p[2] == '++' else '-'
+    id_node = ASTNode('identificador', value=p[1], lineno=p.lineno(1), lexpos=p.lexpos(1))
+    uno_node = ASTNode('numero', value='1', lineno=p.lineno(2), lexpos=p.lexpos(2))
+
+    expr_node = ASTNode('expresion_binaria', value=operador, children=[id_node, uno_node], lineno=p.lineno(2), lexpos=p.lexpos(2))
+
+    p[0] = ASTNode('asignacion', value='=', children=[id_node, expr_node], lineno=p.lineno(2), lexpos=p.lexpos(2))
+
+
 
 def p_asignacion(p):
     '''asignacion : ID EQ expresion SEMICOLON'''

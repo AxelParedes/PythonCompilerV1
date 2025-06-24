@@ -1260,7 +1260,7 @@ class IDE:
         ast_window.geometry("1000x600")  # Ventana más grande para acomodar fuente grande
         
         # Configurar fuente grande
-        big_font = ('Helvetica', 14, 'bold')
+        big_font = ('Helvetica', 18, 'bold')
         
         # Frame principal
         main_frame = tk.Frame(ast_window)
@@ -1349,22 +1349,65 @@ class IDE:
             for child in node.children:
                 self._build_ast_tree(treeview, node_id, child)
     def _build_expr_tree(self, treeview, parent, node, total_lines):
-        """Construye subárbol para expresiones"""
+        """Construye subárbol para expresiones mostrando líneas correctamente"""
         if not isinstance(node, ASTNode):
             return
         
+        # Obtener línea del nodo actual
         line = getattr(node, 'lineno', None)
-        line_text = f" [Línea: {max(1, line - (total_lines - 1))}]" if line else ""
+        line_text = f" [Línea: {max(1, line - (total_lines - 1))}]" if line is not None else ""
         
         if node.type == 'expresion_binaria':
+            # Para operaciones binarias (+, -, *, /, etc.)
             op_text = f"{node.value}{line_text}"
             op_id = treeview.insert(parent, "end", text=op_text)
             
+            # Procesar ambos operandos
             for child in node.children:
-                self._build_expr_tree(treeview, op_id, child, total_lines)
-        else:
-            node_text = f"{node.value if hasattr(node, 'value') else node.type}{line_text}"
+                if isinstance(child, ASTNode):
+                    child_line = getattr(child, 'lineno', line)  # Si el hijo no tiene línea, usa la del padre
+                    child_line_text = f" [Línea: {max(1, child_line - (total_lines - 1))}]" if child_line is not None else ""
+                    
+                    if hasattr(child, 'value'):
+                        # Para nodos hoja (identificadores, números)
+                        child_text = f"{child.value}{child_line_text}"
+                        treeview.insert(op_id, "end", text=child_text)
+                    else:
+                        # Para nodos intermedios
+                        self._build_expr_tree(treeview, op_id, child, total_lines)
+                else:
+                    # Para valores literales directos
+                    treeview.insert(op_id, "end", text=f"{child}{line_text}")
+        
+        elif hasattr(node, 'value'):
+            # Para nodos hoja con valor (identificadores, números)
+            node_text = f"{node.value}{line_text}"
             treeview.insert(parent, "end", text=node_text)
+        
+        else:
+            # Para otros nodos AST
+            node_text = f"{node.type}{line_text}"
+            node_id = treeview.insert(parent, "end", text=node_text)
+            for child in node.children:
+                self._build_expr_tree(treeview, node_id, child, total_lines)
+                
+        # def _build_expr_tree(self, treeview, parent, node, total_lines):
+        # """Construye subárbol para expresiones"""
+        # if not isinstance(node, ASTNode):
+        #     return
+        
+        # line = getattr(node, 'lineno', None)
+        # line_text = f" [Línea: {max(1, line - (total_lines - 1))}]" if line else ""
+        
+        # if node.type == 'expresion_binaria':
+        #     op_text = f"{node.value}{line_text}"
+        #     op_id = treeview.insert(parent, "end", text=op_text)
+            
+        #     for child in node.children:
+        #         self._build_expr_tree(treeview, op_id, child, total_lines)
+        # else:
+        #     node_text = f"{node.value if hasattr(node, 'value') else node.type}{line_text}"
+        #     treeview.insert(parent, "end", text=node_text)
         
 
     def _expand_tree(self, tree, item):

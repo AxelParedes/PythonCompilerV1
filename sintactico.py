@@ -254,12 +254,11 @@ def p_sent_out(p):
     
 def p_expresion_simple(p):
     '''expresion_simple : termino
-                       | expresion_simple PLUS termino
-                       | expresion_simple MIN termino'''
+                       | expresion_simple suma_op termino'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('expresion_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
+        p[0] = ASTNode('expresion_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2))
 
 def p_expresion(p):
     '''expresion : expresion_relacional
@@ -326,15 +325,14 @@ def p_suma_op(p):
               | MIN'''
     p[0] = p[1]
 
+
 def p_termino(p):
     '''termino : factor
-              | termino TIMES factor
-              | termino DIVIDE factor
-              | termino MODULO factor'''
+              | termino mult_op factor'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('operacion_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2), lexpos=p.lexpos(2))
+        p[0] = ASTNode('expresion_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2))
 
 def p_mult_op(p):
     '''mult_op : TIMES
@@ -342,13 +340,14 @@ def p_mult_op(p):
               | MODULO'''
     p[0] = p[1]
 
+
 def p_factor(p):
     '''factor : componente
-             | componente POWER componente'''
+             | componente pot_op componente'''
     if len(p) == 2:
         p[0] = p[1]
     else:
-        p[0] = ASTNode('potencia', children=[p[1], p[3]], lineno=p.lineno(2), lexpos=p.lexpos(2))
+        p[0] = ASTNode('expresion_binaria', children=[p[1], p[3]], value=p[2], lineno=p.lineno(2))
 
 def p_pot_op(p):
     '''pot_op : POWER'''
